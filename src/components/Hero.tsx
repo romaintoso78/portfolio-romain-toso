@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { Github, Linkedin, Download, ArrowDown } from "lucide-react";
+import { Download, ArrowDown } from "lucide-react";
+import { GithubIcon, LinkedinIcon } from "./ui/icons";
 import { profile } from "../data/profile";
 
 export function Hero() {
@@ -78,7 +79,7 @@ export function Hero() {
               aria-label="Profil GitHub de Romain Toso"
               className="flex h-10 w-10 items-center justify-center rounded border border-border text-muted transition-colors hover:border-accent hover:text-accent"
             >
-              <Github size={18} aria-hidden="true" />
+              <GithubIcon size={18} />
             </a>
             <a
               href={profile.linkedin}
@@ -87,7 +88,7 @@ export function Hero() {
               aria-label="Profil LinkedIn de Romain Toso"
               className="flex h-10 w-10 items-center justify-center rounded border border-border text-muted transition-colors hover:border-accent hover:text-accent"
             >
-              <Linkedin size={18} aria-hidden="true" />
+              <LinkedinIcon size={18} />
             </a>
           </div>
         </motion.div>

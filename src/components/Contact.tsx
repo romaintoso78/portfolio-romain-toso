@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Github, Linkedin, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import { GithubIcon, LinkedinIcon } from "./ui/icons";
 import { SectionHeading } from "./ui/SectionHeading";
 import { Reveal } from "./ui/Reveal";
 import { profile } from "../data/profile";
@@ -177,7 +178,7 @@ export function Contact() {
                 aria-label="Profil GitHub de Romain Toso"
                 className="flex items-center gap-3 rounded border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
               >
-                <Github size={16} aria-hidden="true" className="shrink-0 text-muted" />
+                <GithubIcon size={16} className="shrink-0 text-muted" />
                 GitHub
               </a>
               <a
@@ -187,7 +188,7 @@ export function Contact() {
                 aria-label="Profil LinkedIn de Romain Toso"
                 className="flex items-center gap-3 rounded border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
               >
-                <Linkedin size={16} aria-hidden="true" className="shrink-0 text-muted" />
+                <LinkedinIcon size={16} className="shrink-0 text-muted" />
                 LinkedIn
               </a>
             </div>
