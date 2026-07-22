@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 
 export function useActiveSection(sectionIds: string[]) {
   const [activeId, setActiveId] = useState(sectionIds[0] ?? "");
+  // sectionIds is re-created on every render by callers; key on its content
+  // instead of its reference so the observer isn't torn down and rebuilt
+  // on every render.
+  const sectionIdsKey = sectionIds.join("|");
 
   useEffect(() => {
-    const elements = sectionIds
+    const ids = sectionIdsKey.split("|").filter(Boolean);
+    const elements = ids
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
 
@@ -28,7 +33,7 @@ export function useActiveSection(sectionIds: string[]) {
 
     elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [sectionIds]);
+  }, [sectionIdsKey]);
 
   return activeId;
 }

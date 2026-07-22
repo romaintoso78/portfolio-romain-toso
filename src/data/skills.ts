@@ -25,6 +25,10 @@ export const skills: SkillCategory[] = [
     ],
   },
   {
+    category: "Développement",
+    items: [{ label: "JavaScript" }, { label: "PHP" }, { label: "SQL" }],
+  },
+  {
     category: "Réseau & Sécurité",
     items: [
       { label: "pfSense" },
@@ -42,6 +46,7 @@ export const skills: SkillCategory[] = [
     category: "Supervision & Sauvegarde",
     items: [
       { label: "Centreon", note: "API v2, CLAPI" },
+      { label: "Grafana" },
       { label: "Veeam Backup & Replication" },
       { label: "TrueNAS" },
     ],
@@ -54,6 +59,7 @@ export const skills: SkillCategory[] = [
       { label: "Azure DevOps" },
       { label: "Azure" },
       { label: "Proxmox" },
+      { label: "VMware" },
       { label: "EVE-NG" },
     ],
     inProgress: ["Kubernetes (CKA)", "Terraform", "GitOps", "Platform Engineering"],
@@ -61,5 +67,23 @@ export const skills: SkillCategory[] = [
   {
     category: "Outils",
     items: [{ label: "Git" }, { label: "GLPI" }, { label: "Teleport" }],
+  },
+  {
+    category: "Soft skills",
+    items: [
+      { label: "Communication" },
+      { label: "Esprit d'équipe" },
+      { label: "Autonomie" },
+      { label: "Esprit critique" },
+      { label: "Créativité" },
+      { label: "Empathie" },
+    ],
+  },
+  {
+    category: "Langues",
+    items: [
+      { label: "Anglais", note: "B2" },
+      { label: "Espagnol", note: "A2" },
+    ],
   },
 ];

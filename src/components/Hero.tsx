@@ -27,8 +27,12 @@ export function Hero() {
     <section
       id="hero"
       aria-label="Introduction"
-      className="flex min-h-screen flex-col justify-center px-5 pt-14 sm:px-8"
+      className="relative flex min-h-screen flex-col justify-center overflow-hidden px-5 pt-14 sm:px-8"
     >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-[120px]"
+      />
       <motion.div
         variants={container}
         initial="hidden"
@@ -62,14 +66,16 @@ export function Hero() {
           >
             Voir les projets
           </a>
-          <a
-            href={profile.cvUrl}
-            download
-            className="inline-flex items-center gap-2 rounded border border-border px-4 py-2.5 text-sm font-medium text-text transition-colors hover:border-accent"
-          >
-            <Download size={16} aria-hidden="true" />
-            Télécharger le CV
-          </a>
+          {profile.cvUrl && (
+            <a
+              href={profile.cvUrl}
+              download
+              className="inline-flex items-center gap-2 rounded border border-border px-4 py-2.5 text-sm font-medium text-text transition-colors hover:border-accent"
+            >
+              <Download size={16} aria-hidden="true" />
+              Télécharger le CV
+            </a>
+          )}
 
           <div className="ml-auto flex items-center gap-3">
             <a
@@ -81,15 +87,17 @@ export function Hero() {
             >
               <GithubIcon size={18} />
             </a>
-            <a
-              href={profile.linkedin}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Profil LinkedIn de Romain Toso"
-              className="flex h-10 w-10 items-center justify-center rounded border border-border text-muted transition-colors hover:border-accent hover:text-accent"
-            >
-              <LinkedinIcon size={18} />
-            </a>
+            {profile.linkedin && (
+              <a
+                href={profile.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Profil LinkedIn de Romain Toso"
+                className="flex h-10 w-10 items-center justify-center rounded border border-border text-muted transition-colors hover:border-accent hover:text-accent"
+              >
+                <LinkedinIcon size={18} />
+              </a>
+            )}
           </div>
         </motion.div>
       </motion.div>
@@ -100,7 +108,12 @@ export function Hero() {
         animate="show"
         className="mx-auto mt-16 flex w-full max-w-3xl justify-start"
       >
-        <ArrowDown size={16} className="text-muted" aria-hidden="true" />
+        <motion.div
+          animate={prefersReducedMotion ? undefined : { y: [0, 6, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ArrowDown size={16} className="text-muted" aria-hidden="true" />
+        </motion.div>
       </motion.div>
     </section>
   );

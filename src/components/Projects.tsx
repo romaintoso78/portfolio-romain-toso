@@ -9,7 +9,7 @@ export function Projects() {
     <section id="projets" aria-labelledby="projets-heading" className="px-5 py-20 sm:px-8 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <Reveal>
-          <SectionHeading eyebrow="Réalisations" title="Projets" />
+          <SectionHeading id="projets-heading" eyebrow="Réalisations" title="Projets" />
         </Reveal>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">

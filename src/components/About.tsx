@@ -7,7 +7,7 @@ export function About() {
     <section id="profil" aria-labelledby="profil-heading" className="px-5 py-20 sm:px-8 sm:py-28">
       <div className="mx-auto max-w-3xl">
         <Reveal>
-          <SectionHeading eyebrow="À propos" title="Profil" />
+          <SectionHeading id="profil-heading" eyebrow="À propos" title="Profil" />
         </Reveal>
         <div className="space-y-4">
           {profile.summary.map((line, i) => (
@@ -16,6 +16,11 @@ export function About() {
             </Reveal>
           ))}
         </div>
+        {profile.interests && (
+          <Reveal delay={profile.summary.length * 0.05}>
+            <p className="mt-6 font-mono text-sm text-muted">{profile.interests}</p>
+          </Reveal>
+        )}
       </div>
     </section>
   );

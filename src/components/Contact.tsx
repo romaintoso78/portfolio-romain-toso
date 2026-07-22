@@ -72,7 +72,7 @@ export function Contact() {
     <section id="contact" aria-labelledby="contact-heading" className="px-5 py-20 sm:px-8 sm:py-28">
       <div className="mx-auto max-w-3xl">
         <Reveal>
-          <SectionHeading eyebrow="Échanger" title="Contact" />
+          <SectionHeading id="contact-heading" eyebrow="Échanger" title="Contact" />
         </Reveal>
 
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-[1.2fr_1fr]">
@@ -181,16 +181,18 @@ export function Contact() {
                 <GithubIcon size={16} className="shrink-0 text-muted" />
                 GitHub
               </a>
-              <a
-                href={profile.linkedin}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Profil LinkedIn de Romain Toso"
-                className="flex items-center gap-3 rounded border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
-              >
-                <LinkedinIcon size={16} className="shrink-0 text-muted" />
-                LinkedIn
-              </a>
+              {profile.linkedin && (
+                <a
+                  href={profile.linkedin}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Profil LinkedIn de Romain Toso"
+                  className="flex items-center gap-3 rounded border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
+                >
+                  <LinkedinIcon size={16} className="shrink-0 text-muted" />
+                  LinkedIn
+                </a>
+              )}
             </div>
           </Reveal>
         </div>
