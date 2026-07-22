@@ -90,7 +90,7 @@ export function Contact() {
                   onChange={(e) => setName(e.target.value)}
                   aria-invalid={Boolean(errors.name)}
                   aria-describedby={errors.name ? "name-error" : undefined}
-                  className="w-full rounded border border-border bg-surface px-3.5 py-2.5 text-sm text-text outline-none transition-colors focus:border-accent"
+                  className="w-full border border-border bg-surface px-3.5 py-2.5 text-sm text-text outline-none transition-colors focus:border-accent"
                 />
                 {errors.name && (
                   <p id="name-error" role="alert" className="mt-1.5 text-xs text-warm">
@@ -111,7 +111,7 @@ export function Contact() {
                   onChange={(e) => setEmail(e.target.value)}
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby={errors.email ? "email-error" : undefined}
-                  className="w-full rounded border border-border bg-surface px-3.5 py-2.5 text-sm text-text outline-none transition-colors focus:border-accent"
+                  className="w-full border border-border bg-surface px-3.5 py-2.5 text-sm text-text outline-none transition-colors focus:border-accent"
                 />
                 {errors.email && (
                   <p id="email-error" role="alert" className="mt-1.5 text-xs text-warm">
@@ -132,7 +132,7 @@ export function Contact() {
                   onChange={(e) => setMessage(e.target.value)}
                   aria-invalid={Boolean(errors.message)}
                   aria-describedby={errors.message ? "message-error" : undefined}
-                  className="w-full resize-y rounded border border-border bg-surface px-3.5 py-2.5 text-sm text-text outline-none transition-colors focus:border-accent"
+                  className="w-full resize-y border border-border bg-surface px-3.5 py-2.5 text-sm text-text outline-none transition-colors focus:border-accent"
                 />
                 {errors.message && (
                   <p id="message-error" role="alert" className="mt-1.5 text-xs text-warm">
@@ -144,7 +144,7 @@ export function Contact() {
               <button
                 type="submit"
                 disabled={status === "sending"}
-                className="inline-flex items-center rounded border border-accent bg-accent/10 px-4 py-2.5 text-sm font-medium text-text transition-colors hover:bg-accent/20 disabled:opacity-60"
+                className="inline-flex items-center border border-accent bg-accent/10 px-4 py-2.5 text-sm font-medium text-text transition-colors hover:bg-accent/20 disabled:opacity-60"
               >
                 {status === "sending" ? "Envoi en cours…" : "Envoyer le message"}
               </button>
@@ -166,7 +166,7 @@ export function Contact() {
             <div className="space-y-3">
               <a
                 href={`mailto:${profile.email}`}
-                className="flex items-center gap-3 rounded border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
+                className="flex items-center gap-3 border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
               >
                 <Mail size={16} aria-hidden="true" className="shrink-0 text-muted" />
                 <span className="truncate">{profile.email}</span>
@@ -176,7 +176,7 @@ export function Contact() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Profil GitHub de Romain Toso"
-                className="flex items-center gap-3 rounded border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
+                className="flex items-center gap-3 border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
               >
                 <GithubIcon size={16} className="shrink-0 text-muted" />
                 GitHub
@@ -187,7 +187,7 @@ export function Contact() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Profil LinkedIn de Romain Toso"
-                  className="flex items-center gap-3 rounded border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
+                  className="flex items-center gap-3 border border-border px-4 py-3 text-sm text-text transition-colors hover:border-accent"
                 >
                   <LinkedinIcon size={16} className="shrink-0 text-muted" />
                   LinkedIn

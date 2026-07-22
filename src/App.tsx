@@ -1,5 +1,6 @@
 import { Nav } from "./components/Nav";
 import { StatusRail } from "./components/StatusRail";
+import { KoiFish } from "./components/KoiFish";
 import { Hero } from "./components/Hero";
 import { About } from "./components/About";
 import { Experience } from "./components/Experience";
@@ -8,6 +9,7 @@ import { Skills } from "./components/Skills";
 import { Education } from "./components/Education";
 import { Contact } from "./components/Contact";
 import { Footer } from "./components/Footer";
+import { WaveDivider } from "./components/ui/WaveDivider";
 import { useActiveSection } from "./hooks/useActiveSection";
 
 const sections = [
@@ -25,15 +27,22 @@ function App() {
 
   return (
     <>
+      <KoiFish />
       <Nav sections={sections} activeId={activeId} />
       <StatusRail sections={sections} activeId={activeId} />
-      <main>
+      <main className="relative z-10">
         <Hero />
+        <WaveDivider />
         <About />
+        <WaveDivider />
         <Experience />
+        <WaveDivider />
         <Projects />
+        <WaveDivider />
         <Skills />
+        <WaveDivider />
         <Education />
+        <WaveDivider />
         <Contact />
       </main>
       <Footer />

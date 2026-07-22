@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Download, ArrowDown } from "lucide-react";
 import { GithubIcon, LinkedinIcon } from "./ui/icons";
+import { Hanko } from "./ui/Hanko";
 import { profile } from "../data/profile";
 
 export function Hero() {
@@ -43,12 +44,12 @@ export function Hero() {
           {profile.role}
         </motion.p>
 
-        <motion.h1
-          variants={item}
-          className="font-display text-4xl font-bold leading-[1.05] tracking-tight text-text sm:text-6xl"
-        >
-          {profile.name}
-        </motion.h1>
+        <motion.div variants={item} className="flex items-end gap-5">
+          <h1 className="font-display text-4xl font-medium leading-[0.98] tracking-tight text-text sm:text-6xl">
+            {profile.name}
+          </h1>
+          <Hanko className="mb-1 hidden sm:block" />
+        </motion.div>
 
         <motion.p variants={item} className="mt-4 font-display text-lg text-muted sm:text-xl">
           {profile.subtitle}
@@ -62,7 +63,7 @@ export function Hero() {
           <a
             href="#projets"
             onClick={scrollToProjects}
-            className="inline-flex items-center rounded border border-accent bg-accent/10 px-4 py-2.5 text-sm font-medium text-text transition-colors hover:bg-accent/20"
+            className="inline-flex items-center border border-accent bg-accent/10 px-4 py-2.5 text-sm font-medium text-text transition-colors hover:bg-accent/20"
           >
             Voir les projets
           </a>
@@ -70,7 +71,7 @@ export function Hero() {
             <a
               href={profile.cvUrl}
               download
-              className="inline-flex items-center gap-2 rounded border border-border px-4 py-2.5 text-sm font-medium text-text transition-colors hover:border-accent"
+              className="inline-flex items-center gap-2 border border-border px-4 py-2.5 text-sm font-medium text-text transition-colors hover:border-accent"
             >
               <Download size={16} aria-hidden="true" />
               Télécharger le CV
@@ -83,7 +84,7 @@ export function Hero() {
               target="_blank"
               rel="noreferrer"
               aria-label="Profil GitHub de Romain Toso"
-              className="flex h-10 w-10 items-center justify-center rounded border border-border text-muted transition-colors hover:border-accent hover:text-accent"
+              className="flex h-10 w-10 items-center justify-center border border-border text-muted transition-colors hover:border-accent hover:text-accent"
             >
               <GithubIcon size={18} />
             </a>
@@ -93,7 +94,7 @@ export function Hero() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Profil LinkedIn de Romain Toso"
-                className="flex h-10 w-10 items-center justify-center rounded border border-border text-muted transition-colors hover:border-accent hover:text-accent"
+                className="flex h-10 w-10 items-center justify-center border border-border text-muted transition-colors hover:border-accent hover:text-accent"
               >
                 <LinkedinIcon size={18} />
               </a>

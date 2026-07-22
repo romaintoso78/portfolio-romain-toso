@@ -35,7 +35,7 @@ export function Skills() {
                       {group.inProgress.map((label) => (
                         <span
                           key={label}
-                          className="inline-flex items-center gap-1.5 rounded border border-dashed border-warm/50 bg-warm/5 px-2.5 py-1 font-mono text-xs text-warm"
+                          className="inline-flex items-center gap-1.5 border border-dashed border-warm/60 bg-warm/5 px-2.5 py-1 font-mono text-xs text-warm"
                         >
                           {label}
                         </span>

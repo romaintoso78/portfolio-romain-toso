@@ -8,7 +8,21 @@ Portfolio professionnel monopage. Vitrine d'un profil infrastructure IT en trans
 - Tailwind CSS v4
 - Framer Motion (motion minimale, scroll reveals)
 - lucide-react (icônes)
-- Polices self-hébergées via `@fontsource` (Archivo, Inter, JetBrains Mono)
+- Polices self-hébergées via `@fontsource` (Shippori Mincho, Zen Kaku Gothic New, JetBrains Mono)
+
+## Direction artistique — "Koi"
+
+Thème encre sumi-e / or / laque : fond noir d'encre, accent or (kintsugi), rouge laque
+réservé au sceau (hanko) et aux badges. Coins carrés (esthétique rectiligne japonaise
+plutôt que `rounded-lg`).
+
+- `src/components/KoiFish.tsx` : koi en Canvas qui suit le curseur avec une physique de
+  ressort amorti ; nage seul en boucles paresseuses si la souris est inactive ou absente
+  (tactile). Respecte `prefers-reduced-motion` (pose statique, pas d'animation).
+- `src/components/ui/Hanko.tsx` : sceau décoratif à côté du nom en Hero.
+- `src/components/ui/WaveDivider.tsx` : séparateur de sections en motif seigaiha (vagues).
+- Palette et polices pilotées entièrement par les variables CSS de `src/index.css` —
+  chaque thème (clair/sombre) redéfinit le même jeu de tokens.
 
 ## Installation
 
