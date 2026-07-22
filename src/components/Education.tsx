@@ -21,7 +21,10 @@ export function Education() {
               <h3 className="font-display text-lg font-semibold text-text sm:text-xl">{education.school}</h3>
               <p className="mt-1 text-sm font-medium text-text sm:text-base">{education.program}</p>
               <p className="mt-2 text-sm leading-relaxed text-muted sm:text-base">{education.detail}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <p className="mt-4 font-mono text-[11px] uppercase tracking-wide text-muted">
+                Modules du cursus
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
                 {education.modules.map((m) => (
                   <Tag key={m}>{m}</Tag>
                 ))}

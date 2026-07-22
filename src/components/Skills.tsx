@@ -24,15 +24,25 @@ export function Skills() {
                       {item.label}
                     </Tag>
                   ))}
-                  {group.inProgress?.map((label) => (
-                    <span
-                      key={label}
-                      className="inline-flex items-center gap-1.5 rounded border border-dashed border-warm/50 bg-warm/5 px-2.5 py-1 font-mono text-xs text-warm"
-                    >
-                      {label}
-                    </span>
-                  ))}
                 </div>
+
+                {group.inProgress && group.inProgress.length > 0 && (
+                  <div className="mt-3">
+                    <p className="mb-2 font-mono text-[11px] uppercase tracking-wide text-warm/80">
+                      En cours d'apprentissage
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {group.inProgress.map((label) => (
+                        <span
+                          key={label}
+                          className="inline-flex items-center gap-1.5 rounded border border-dashed border-warm/50 bg-warm/5 px-2.5 py-1 font-mono text-xs text-warm"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </Reveal>
           ))}
