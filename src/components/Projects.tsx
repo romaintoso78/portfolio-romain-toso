@@ -19,7 +19,7 @@ export function Projects() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <h3 className="font-display text-lg font-semibold text-text sm:text-xl">{project.name}</h3>
                   {project.featured && (
-                    <span className="rounded border border-warm/40 bg-warm/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-warm">
+                    <span className="border border-warm/50 bg-warm/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-warm">
                       Projet phare
                     </span>
                   )}

@@ -44,7 +44,7 @@ export function StatusRail({ sections, activeId }: StatusRailProps) {
                     : "border-muted bg-bg group-hover:border-accent"
                 }`}
               />
-              <span className="pointer-events-none absolute left-5 whitespace-nowrap rounded border border-border bg-surface px-2 py-1 font-mono text-xs text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+              <span className="pointer-events-none absolute left-5 whitespace-nowrap border border-border bg-surface px-2 py-1 font-mono text-xs text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100">
                 {section.label}
               </span>
             </button>

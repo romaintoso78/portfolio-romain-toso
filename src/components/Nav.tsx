@@ -52,7 +52,7 @@ export function Nav({ sections, activeId }: NavProps) {
           <ThemeToggle />
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded border border-border text-text md:hidden"
+            className="flex h-9 w-9 items-center justify-center border border-border text-text md:hidden"
             aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}

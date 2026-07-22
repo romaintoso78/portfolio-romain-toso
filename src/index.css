@@ -1,47 +1,54 @@
 @import "tailwindcss";
 
-@import "@fontsource/archivo/600.css";
-@import "@fontsource/archivo/700.css";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
+@import "@fontsource/shippori-mincho/latin-500.css";
+@import "@fontsource/shippori-mincho/latin-600.css";
+@import "@fontsource/shippori-mincho/latin-700.css";
+@import "@fontsource/shippori-mincho/latin-ext-500.css";
+@import "@fontsource/shippori-mincho/latin-ext-600.css";
+@import "@fontsource/shippori-mincho/latin-ext-700.css";
+@import "@fontsource/zen-kaku-gothic-new/latin-400.css";
+@import "@fontsource/zen-kaku-gothic-new/latin-500.css";
+@import "@fontsource/zen-kaku-gothic-new/latin-ext-400.css";
+@import "@fontsource/zen-kaku-gothic-new/latin-ext-500.css";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
 
 :root {
-  --bg: #0e1116;
-  --surface: #161b22;
-  --surface-2: #1b2129;
-  --border: #242c38;
-  --text: #e4e9f0;
-  --muted: #8792a2;
-  --accent: #4c8dff;
-  --warm: #ffb454;
+  /* Encre (sumi) — thème par défaut */
+  --bg: #0c0d0f;
+  --surface: #17181b;
+  --surface-2: #1e2023;
+  --border: rgba(193, 155, 74, 0.28);
+  --text: #eae6da;
+  --muted: #948a7a;
+  --accent: #c9a24b;
+  --warm: #d8623a;
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --bg: #f4f6f9;
-  --surface: #ffffff;
-  --surface-2: #eef1f5;
-  --border: #dbe1ea;
-  --text: #12161d;
-  --muted: #566072;
-  --accent: #2f6fe0;
-  --warm: #b3690f;
+  /* Washi (papier) */
+  --bg: #f2ecdf;
+  --surface: #fffdf8;
+  --surface-2: #f8f1e2;
+  --border: rgba(147, 112, 31, 0.3);
+  --text: #221e17;
+  --muted: #6e6555;
+  --accent: #8a6a1f;
+  --warm: #a13a20;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #f4f6f9;
-    --surface: #ffffff;
-    --surface-2: #eef1f5;
-    --border: #dbe1ea;
-    --text: #12161d;
-    --muted: #566072;
-    --accent: #2f6fe0;
-    --warm: #b3690f;
+    --bg: #f2ecdf;
+    --surface: #fffdf8;
+    --surface-2: #f8f1e2;
+    --border: rgba(147, 112, 31, 0.3);
+    --text: #221e17;
+    --muted: #6e6555;
+    --accent: #8a6a1f;
+    --warm: #a13a20;
     color-scheme: light;
   }
 }
@@ -56,8 +63,8 @@
   --color-accent: var(--accent);
   --color-warm: var(--warm);
 
-  --font-display: "Archivo", "Space Grotesk", ui-sans-serif, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, sans-serif;
+  --font-display: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  --font-sans: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Segoe UI", ui-sans-serif, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
@@ -70,6 +77,7 @@ html {
 }
 
 body {
+  position: relative;
   margin: 0;
   background-color: var(--bg);
   color: var(--text);
@@ -77,6 +85,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Grain de papier washi — texture subtile, indépendante du thème */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 ::selection {
@@ -87,7 +107,6 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
