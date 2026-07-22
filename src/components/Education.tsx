@@ -8,7 +8,7 @@ export function Education() {
     <section id="formation" aria-labelledby="formation-heading" className="px-5 py-20 sm:px-8 sm:py-28">
       <div className="mx-auto max-w-3xl">
         <Reveal>
-          <SectionHeading eyebrow="Parcours" title="Formation" />
+          <SectionHeading id="formation-heading" eyebrow="Parcours" title="Formation" />
         </Reveal>
 
         <Reveal>

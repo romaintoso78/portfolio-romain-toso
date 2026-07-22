@@ -4,7 +4,7 @@ export const projects: Project[] = [
   {
     id: "upcycleconnect-infra",
     name: "UpcycleConnect — Infrastructure réseau multi-sites",
-    meta: "Projet annuel ESGI · Note : 16/20 en soutenance intermédiaire",
+    meta: "Projet annuel ESGI · Note : 20/20",
     featured: true,
     description:
       "Conception et déploiement complet d'une infrastructure d'entreprise multi-sites, maquettée sous EVE-NG sur un VPS OVH avec Proxmox.",

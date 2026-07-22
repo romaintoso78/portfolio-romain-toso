@@ -8,7 +8,7 @@ export function Skills() {
     <section id="competences" aria-labelledby="competences-heading" className="px-5 py-20 sm:px-8 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <Reveal>
-          <SectionHeading eyebrow="Savoir-faire" title="Compétences" />
+          <SectionHeading id="competences-heading" eyebrow="Savoir-faire" title="Compétences" />
         </Reveal>
 
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://TODO-DOMAIN.vercel.app/sitemap.xml
+Sitemap: https://portfolio-romain-toso-psi.vercel.app/sitemap.xml

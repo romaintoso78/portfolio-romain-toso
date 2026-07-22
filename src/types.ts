@@ -13,8 +13,8 @@ export interface Profile {
   summary: string[];
   email: string;
   github: string;
-  linkedin: string;
-  cvUrl: string;
+  linkedin?: string;
+  cvUrl?: string;
 }
 
 export interface Mission {

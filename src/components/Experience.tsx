@@ -8,7 +8,11 @@ export function Experience() {
     <section id="experience" aria-labelledby="experience-heading" className="px-5 py-20 sm:px-8 sm:py-28">
       <div className="mx-auto max-w-3xl">
         <Reveal>
-          <SectionHeading eyebrow="Expérience" title={`${experience.company} · ${experience.role}`} />
+          <SectionHeading
+            id="experience-heading"
+            eyebrow="Expérience"
+            title={`${experience.company} · ${experience.role}`}
+          />
         </Reveal>
 
         <Reveal>
