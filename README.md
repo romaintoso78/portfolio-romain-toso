@@ -4,7 +4,7 @@ Portfolio professionnel monopage. Vitrine d'un profil infrastructure IT en trans
 
 ## Stack
 
-- React 18 + Vite + TypeScript (strict)
+- React 19 + Vite + TypeScript (strict)
 - Tailwind CSS v4
 - Framer Motion (motion minimale, scroll reveals)
 - lucide-react (icônes)
@@ -45,11 +45,9 @@ Pour ajouter une mission ou un projet, il suffit d'ajouter une entrée dans le f
 
 ## À compléter avant mise en ligne
 
-- [ ] `src/data/profile.ts` : remplacer `email`, `github`, `linkedin` (actuellement des `TODO_...`)
-- [ ] Déposer le CV dans `public/cv-romain-toso.pdf` (référencé par le bouton "Télécharger le CV")
 - [ ] Optionnel : `public/avatar.jpg` si une photo de profil est ajoutée
 - [ ] Optionnel : `public/og-image.png` (1200×630) pour un aperçu de partage social — voir le commentaire dans `index.html`
-- [ ] Remplacer `TODO-DOMAIN.vercel.app` dans `index.html`, `public/robots.txt` et `public/sitemap.xml` par le nom de domaine réel une fois connu
+- [ ] Si un domaine personnalisé est acheté : remplacer `portfolio-romain-toso-psi.vercel.app` dans `index.html`, `public/robots.txt` et `public/sitemap.xml`
 - [ ] Si un formulaire Formspree est utilisé : copier `.env.example` vers `.env` et renseigner `VITE_FORMSPREE_ENDPOINT` (sans endpoint configuré, le formulaire retombe sur un `mailto:` vers l'adresse de `profile.ts`)
 
 ## Déploiement (Vercel)

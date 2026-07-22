@@ -1,6 +1,5 @@
 import type { Profile } from "../types";
 
-// TODO: remplacer par les vraies valeurs avant mise en ligne.
 export const profile: Profile = {
   name: "Romain Toso",
   role: "Apprenti Ingénieur Infrastructure & Cybersécurité",
@@ -19,8 +18,9 @@ export const profile: Profile = {
     "Conçoit également des architectures complètes de zéro, de la maquette réseau à la mise en production, avec la sécurité comme fil conducteur.",
     "Objectif : un poste DevOps / Platform Engineer à l'issue du Bac+5, en septembre 2027.",
   ],
-  email: "TODO_EMAIL@example.com",
-  github: "https://github.com/TODO_GITHUB_USERNAME",
-  linkedin: "https://www.linkedin.com/in/TODO_LINKEDIN_HANDLE",
+  interests: "En dehors de l'IT : judo, course à pied, et événements musicaux.",
+  email: "rominet340@gmail.com",
+  github: "https://github.com/romaintoso78",
+  linkedin: "https://www.linkedin.com/in/romain-toso-4002511a0/",
   cvUrl: "/cv-romain-toso.pdf",
 };
