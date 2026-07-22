@@ -45,8 +45,6 @@ Pour ajouter une mission ou un projet, il suffit d'ajouter une entrée dans le f
 
 ## À compléter avant mise en ligne
 
-- [ ] `src/data/profile.ts` : renseigner `linkedin` (le bouton reste masqué tant que le champ est vide)
-- [ ] Déposer le CV dans `public/cv-romain-toso.pdf` puis renseigner `profile.cvUrl` (le bouton "Télécharger le CV" reste masqué tant que le champ est vide)
 - [ ] Optionnel : `public/avatar.jpg` si une photo de profil est ajoutée
 - [ ] Optionnel : `public/og-image.png` (1200×630) pour un aperçu de partage social — voir le commentaire dans `index.html`
 - [ ] Si un domaine personnalisé est acheté : remplacer `portfolio-romain-toso-psi.vercel.app` dans `index.html`, `public/robots.txt` et `public/sitemap.xml`

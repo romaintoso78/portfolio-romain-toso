@@ -20,10 +20,6 @@ export const profile: Profile = {
   ],
   email: "rominet340@gmail.com",
   github: "https://github.com/romaintoso78",
-  // TODO: renseigner le profil LinkedIn une fois disponible — le lien
-  // reste masqué tant que ce champ est vide (voir Hero.tsx / Contact.tsx).
-  linkedin: undefined,
-  // TODO: déposer public/cv-romain-toso.pdf puis remettre cette valeur —
-  // le bouton "Télécharger le CV" reste masqué tant que ce champ est vide.
-  cvUrl: undefined,
+  linkedin: "https://www.linkedin.com/in/romain-toso-4002511a0/",
+  cvUrl: "/cv-romain-toso.pdf",
 };
