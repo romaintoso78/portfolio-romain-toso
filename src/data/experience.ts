@@ -1,4 +1,4 @@
-import type { Experience } from "../types";
+import type { Experience, PriorRole } from "../types";
 
 export const experience: Experience = {
   company: "SOCOTEC",
@@ -82,4 +82,14 @@ export const experience: Experience = {
       tech: ["ACL", "NTFS", "Active Directory", "DFS", "PowerShell"],
     },
   ],
+};
+
+export const priorRole: PriorRole = {
+  company: "Fromages et Détail",
+  role: "Responsable / Chargé de ventes",
+  period: "Janvier 2023 – Juin 2024",
+  note: "Temps plein, 35h/semaine",
+  actions: ["Réception et pointage des commandes", "Formation des nouveaux arrivants"],
+  insight:
+    "Cette expérience m'a fait découvrir les enjeux de la relation client, et l'importance de l'écoute, de la réactivité et de l'adaptabilité — des réflexes que je retrouve aujourd'hui dans l'exploitation quotidienne.",
 };

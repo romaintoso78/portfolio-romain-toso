@@ -11,6 +11,7 @@ export interface Profile {
   availability: string;
   contextLine: string;
   summary: string[];
+  interests?: string;
   email: string;
   github: string;
   linkedin?: string;
@@ -34,6 +35,15 @@ export interface Experience {
   missions: Mission[];
 }
 
+export interface PriorRole {
+  company: string;
+  role: string;
+  period: string;
+  note?: string;
+  actions: string[];
+  insight?: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -53,7 +63,8 @@ export interface SkillCategory {
 export interface EducationEntry {
   school: string;
   program: string;
-  detail: string;
-  modules: string[];
-  status: string;
+  period: string;
+  detail?: string;
+  modules?: string[];
+  status?: string;
 }

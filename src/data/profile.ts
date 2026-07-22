@@ -18,6 +18,7 @@ export const profile: Profile = {
     "Conçoit également des architectures complètes de zéro, de la maquette réseau à la mise en production, avec la sécurité comme fil conducteur.",
     "Objectif : un poste DevOps / Platform Engineer à l'issue du Bac+5, en septembre 2027.",
   ],
+  interests: "En dehors de l'IT : judo, course à pied, et événements musicaux.",
   email: "rominet340@gmail.com",
   github: "https://github.com/romaintoso78",
   linkedin: "https://www.linkedin.com/in/romain-toso-4002511a0/",

@@ -1,7 +1,7 @@
 import { SectionHeading } from "./ui/SectionHeading";
 import { Tag } from "./ui/Tag";
 import { Reveal } from "./ui/Reveal";
-import { experience } from "../data/experience";
+import { experience, priorRole } from "../data/experience";
 
 export function Experience() {
   return (
@@ -49,6 +49,30 @@ export function Experience() {
             </Reveal>
           ))}
         </ol>
+
+        <Reveal delay={experience.missions.length * 0.04}>
+          <div className="mt-12 border-t border-dashed border-border pt-8">
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-wide text-muted">Avant l'IT</p>
+            <h3 className="font-display text-base font-semibold text-text sm:text-lg">
+              {priorRole.role} · {priorRole.company}
+            </h3>
+            <p className="mt-1 font-mono text-xs text-muted">
+              {priorRole.period}
+              {priorRole.note ? ` · ${priorRole.note}` : ""}
+            </p>
+            <ul className="mt-3 space-y-1.5">
+              {priorRole.actions.map((action) => (
+                <li key={action} className="flex gap-2.5 text-sm leading-relaxed text-muted">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted" aria-hidden="true" />
+                  {action}
+                </li>
+              ))}
+            </ul>
+            {priorRole.insight && (
+              <p className="mt-3 text-sm italic leading-relaxed text-muted">{priorRole.insight}</p>
+            )}
+          </div>
+        </Reveal>
       </div>
     </section>
   );
