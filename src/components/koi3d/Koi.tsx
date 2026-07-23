@@ -116,6 +116,13 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       mouse: { x: 0, y: 0, active: false, lastMove: -1e9 },
       idleTarget: new Vector3(0, 0, 0),
       idleTimer: 0,
+      // Whether idle-wander mode was active last frame — lets us detect the
+      // exact frame it switches back on after the cursor goes away, so a
+      // fresh (heading-biased) target gets picked right then instead of
+      // reusing whatever idleTarget was last left over from however long
+      // ago idle mode was last active, which could be anywhere on screen
+      // relative to where the koi is now.
+      wasIdle: true,
       head: start.clone(),
       vel: new Vector3(0, 0, 0),
       // Explicit kinematic state: a fish can only thrust along the way it's
@@ -185,9 +192,23 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
   }, [size, state]);
 
   const pickIdleTarget = () => {
+    // A fully random point anywhere on screen, picked on a timer regardless
+    // of whether the koi ever got close to the *previous* one, meant it
+    // spent most of idle time (measured: ~40%) grinding through a hard turn
+    // rather than gliding — every few seconds it could be asked to reverse
+    // course almost entirely. Real idle wandering is the opposite: long,
+    // easy glides with only occasional gentle course changes. Bias the next
+    // destination to a modest swing off the *current* heading instead of a
+    // uniformly random direction, so it never has to reorient hard just to
+    // hold station.
+    const swing = (Math.random() - 0.5) * Math.PI * 0.55; // up to ~50° either way
+    const angle = state.heading + swing;
+    const dist = 260 + Math.random() * 220;
+    const maxX = size.width * 0.42;
+    const maxY = size.height * 0.32;
     state.idleTarget.set(
-      (Math.random() - 0.5) * size.width * 0.7,
-      (Math.random() - 0.5) * size.height * 0.55,
+      Math.max(-maxX, Math.min(maxX, state.head.x + Math.cos(angle) * dist)),
+      Math.max(-maxY, Math.min(maxY, state.head.y + Math.sin(angle) * dist)),
       0,
     );
   };
@@ -208,18 +229,37 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       const idleFor = now - state.mouse.lastMove;
       let targetX: number;
       let targetY: number;
-      if (state.mouse.active && idleFor < 4500) {
+      const isIdleNow = !(state.mouse.active && idleFor < 4500);
+      if (!isIdleNow) {
         targetX = state.mouse.x;
         targetY = state.mouse.y;
       } else {
-        state.idleTimer -= dt;
-        if (state.idleTimer <= 0) {
+        // The moment idle mode switches back on after the cursor stops
+        // (or leaves), immediately pick a fresh target rather than reusing
+        // whatever was last left in idleTarget — that could be anywhere on
+        // screen relative to wherever the koi ended up while it was
+        // following the cursor, forcing a jarring snap-turn right as the
+        // cursor lets go.
+        if (!state.wasIdle) {
           pickIdleTarget();
-          state.idleTimer = 3 + Math.random() * 3;
+          state.idleTimer = 6 + Math.random() * 5;
+        }
+
+        // Beyond that, switch on arrival, not just on a timer — picking a
+        // fresh target purely on a clock (even mid-glide, well before
+        // actually getting there) was what forced constant hard
+        // reorientation. The timer is now just a fallback in case a target
+        // is unreachable for some reason, not the normal trigger.
+        const idleDist = Math.hypot(state.idleTarget.x - state.head.x, state.idleTarget.y - state.head.y);
+        state.idleTimer -= dt;
+        if (state.idleTimer <= 0 || idleDist < 90) {
+          pickIdleTarget();
+          state.idleTimer = 6 + Math.random() * 5;
         }
         targetX = state.idleTarget.x;
         targetY = state.idleTarget.y;
       }
+      state.wasIdle = isIdleNow;
 
       // A real koi never darts to match how fast you move the cursor — it
       // cruises at its own calm, constant pace and just steers toward
