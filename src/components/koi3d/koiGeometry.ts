@@ -1,26 +1,41 @@
-import { BufferGeometry, BufferAttribute, Vector3 } from "three";
+import { BufferGeometry, BufferAttribute, CatmullRomCurve3, Vector3 } from "three";
 
 const RING_SEGMENTS = 20;
+// The physics only tracks a handful of control points (one per STEP units
+// travelled); resampling a smooth curve through them at a much higher
+// resolution avoids a faceted, polyline-y body silhouette.
+const SPINE_SAMPLES = 48;
 const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
 
+function radiusAt(controlRadii: number[], t: number): number {
+  const scaled = t * (controlRadii.length - 1);
+  const i0 = Math.floor(scaled);
+  const i1 = Math.min(i0 + 1, controlRadii.length - 1);
+  const f = scaled - i0;
+  return controlRadii[i0] * (1 - f) + controlRadii[i1] * f;
+}
+
 /**
- * Builds (or refreshes) a tapered body around the given spine, ring by ring,
- * using a stable per-ring frame (tangent/right/up) so the body doesn't twist.
- * Cross-section is a slightly flattened, ventrally-offset ellipse (real fish
- * aren't cylinders: flatter belly, a touch of dorsal ridge) rather than a
- * perfect circle. Reuses `geometry` across frames when the vertex count
- * already matches. UVs: u = position along the body, v = angle around it —
- * used to map the procedural skin texture.
+ * Builds (or refreshes) a tapered body around a smooth curve through the
+ * given control points (a Catmull-Rom spline, resampled at a much finer
+ * resolution than the sparse physics control points so the silhouette
+ * reads as a continuous fish rather than a faceted polyline). Cross-section
+ * is a slightly flattened, ventrally-offset ellipse — real fish aren't
+ * cylinders: flatter belly, a touch of dorsal ridge. Reuses `geometry`
+ * across frames when the vertex count already matches. UVs: u = position
+ * along the body, v = angle around it — used to map the skin texture.
  */
 export function buildKoiBody(
-  spine: Vector3[],
-  radii: number[],
+  controlPoints: Vector3[],
+  controlRadii: number[],
   geometry?: BufferGeometry,
 ): BufferGeometry {
-  const ringCount = spine.length;
-  const vertsNeeded = ringCount * RING_SEGMENTS;
+  const curve = new CatmullRomCurve3(controlPoints, false, "catmullrom", 0.4);
+  const ringCount = SPINE_SAMPLES;
+  const points = curve.getPoints(ringCount - 1);
 
+  const vertsNeeded = ringCount * RING_SEGMENTS;
   const geo = geometry ?? new BufferGeometry();
   const reuse = geo.getAttribute("position")?.count === vertsNeeded;
 
@@ -32,10 +47,10 @@ export function buildKoiBody(
   const ringUp = new Vector3();
 
   for (let i = 0; i < ringCount; i++) {
-    const p = spine[i];
-    const prev = spine[Math.max(0, i - 1)];
-    const next = spine[Math.min(ringCount - 1, i + 1)];
-    tangent.subVectors(next, prev);
+    const p = points[i];
+    const t = i / (ringCount - 1);
+
+    curve.getTangentAt(t, tangent);
     if (tangent.lengthSq() < 1e-6) tangent.set(1, 0, 0);
     tangent.normalize();
 
@@ -43,11 +58,10 @@ export function buildKoiBody(
     right.crossVectors(tangent, ref).normalize();
     ringUp.crossVectors(right, tangent).normalize();
 
-    const radius = radii[i] ?? 0.05;
+    const radius = radiusAt(controlRadii, t);
     const width = radius;
     const height = radius * 0.82;
     const bellyOffset = radius * 0.12;
-    const t = ringCount > 1 ? i / (ringCount - 1) : 0;
 
     for (let s = 0; s < RING_SEGMENTS; s++) {
       const theta = (s / RING_SEGMENTS) * Math.PI * 2;

@@ -8,8 +8,13 @@ import { buildKoiSkinTexture } from "./skinTexture";
 import type { RippleSpawner } from "./Ripples";
 
 const SEG_COUNT = 14;
-const LAG = 4;
-const HISTORY_MAX = SEG_COUNT * LAG + 20;
+// History points are recorded every STEP units of *distance travelled*, not
+// every frame — otherwise the body would stretch when the koi moves fast
+// (points spread far apart) and bunch up into a blob when it slows down or
+// stops (points all land on top of each other). This keeps its length
+// constant no matter the speed.
+const STEP = 3;
+const HISTORY_MAX = SEG_COUNT + 6;
 // Blunt rounded head, thick midsection, a pinched peduncle just before the
 // tail fin — a smooth torpedo taper reads more like a slug than a fish.
 const RADII = [
@@ -60,7 +65,7 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     const history: Vector3[] = reduceMotion
       ? Array.from(
           { length: HISTORY_MAX },
-          (_, i) => new Vector3(-i * 2.4, Math.sin(i * 0.28) * 6, 0),
+          (_, i) => new Vector3(-i * STEP, Math.sin(i * 0.28) * 6, 0),
         )
       : [start.clone()];
     return {
@@ -162,8 +167,15 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       state.head.y += state.vel.y * dt;
       state.head.z = Math.sin(state.time * 1.1) * 1.4;
 
-      state.history.unshift(state.head.clone());
-      if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
+      const distFromLast = state.history.length > 0 ? state.head.distanceTo(state.history[0]) : Infinity;
+      if (distFromLast >= STEP) {
+        state.history.unshift(state.head.clone());
+        if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
+      } else {
+        // Still update the very tip continuously so the head doesn't lag
+        // a full STEP behind while easing into a stop.
+        state.history[0] = state.head.clone();
+      }
 
       const speed = state.vel.length();
       if (speed > cruiseSpeed * 0.7 && Math.random() < 0.03) {
@@ -175,7 +187,7 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
 
     const spine: Vector3[] = [];
     for (let i = 0; i < SEG_COUNT; i++) {
-      const idx = Math.min(i * LAG, state.history.length - 1);
+      const idx = Math.min(i, state.history.length - 1);
       spine.push(state.history[idx]);
     }
 
