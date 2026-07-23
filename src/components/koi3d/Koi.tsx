@@ -5,7 +5,6 @@ import {
   DoubleSide,
   Group,
   Mesh,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   Vector3,
 } from "three";
@@ -59,17 +58,19 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
   // reach the already-mounted material. Updating `.color` directly on
   // these instances does, since it's the exact object every mesh renders
   // with.
+  // Plain MeshStandardMaterial, not MeshPhysicalMaterial — clearcoat/sheen
+  // each add a full extra specular evaluation per fragment, multiplied
+  // across several overlapping semi-transparent fins at full canvas
+  // resolution. That shader cost was a real, continuous frame-time tax,
+  // not a one-off — worth spending on a background decoration only once
+  // the base animation is confirmed smooth.
   const finMaterial = useMemo(
     () =>
-      new MeshPhysicalMaterial({
-        roughness: 0.4,
+      new MeshStandardMaterial({
+        roughness: 0.45,
         transparent: true,
         opacity: 0.55,
         side: DoubleSide,
-        clearcoat: 0.3,
-        sheen: 0.6,
-        sheenRoughness: 0.35,
-        sheenColor: 0xffffff,
       }),
     [],
   );
@@ -341,8 +342,11 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       } else {
         // Still update the very tip continuously so the head doesn't lag
         // a full STEP behind while easing into a stop — this does NOT
-        // affect the distFromLast baseline above (that's lastCommit).
-        state.history[0] = state.head.clone();
+        // affect the distFromLast baseline above (that's lastCommit). Mutate
+        // the existing Vector3 in place rather than cloning a new one —
+        // this branch runs on most frames, so a fresh allocation here was a
+        // steady, needless stream of garbage for the GC to chase.
+        state.history[0].copy(state.head);
       }
 
       const speed = state.vel.length();
@@ -516,18 +520,13 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
   return (
     <group>
       <mesh ref={bodyRef} frustumCulled={false}>
-        <meshPhysicalMaterial
-          map={skinTexture}
-          roughness={0.4}
-          metalness={0.02}
-          clearcoat={0.5}
-          clearcoatRoughness={0.25}
-          iridescence={0.2}
-          iridescenceIOR={1.3}
-          sheen={0.4}
-          sheenRoughness={0.5}
-          sheenColor={0xffffff}
-        />
+        {/*
+          Plain standard material — clearcoat/iridescence/sheen (all from
+          MeshPhysicalMaterial) each add real per-fragment shader cost, paid
+          continuously every frame across the whole body's screen footprint.
+          That was a genuine, ongoing performance tax, not a one-time cost.
+        */}
+        <meshStandardMaterial map={skinTexture} roughness={0.45} metalness={0.02} />
       </mesh>
 
       <group ref={tailRef}>
