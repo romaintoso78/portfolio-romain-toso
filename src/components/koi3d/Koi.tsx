@@ -428,33 +428,44 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       // running its own independent, repeating cycle disconnected from what
       // the rest of the body is doing.
       //
-      // On top of that, the tail is biased by the koi's current *steering*
-      // demand (state.bank, already the smoothed turn-into-the-curve
-      // amount): a real fish doesn't beat its tail in a perfectly
-      // symmetric rhythm regardless of where it's headed — it digs the
-      // tail in on the side that actually drives the turn it's making
-      // right now, harder the sharper that turn is, and dead-neutral when
-      // swimming straight. That's what ties the tail's motion to "the
-      // movement it needs to make" rather than a canned loop.
+      // The wave is a *lateral* offset, so it has to be applied along the
+      // body's actual local direction at the tail, not the koi's current
+      // overall heading — during a turn the tail trails behind through the
+      // curved path and can point quite differently from however the head
+      // is facing right now. Using the global heading there produced a
+      // sharp, unnatural kink between body and tail mid-turn. Estimate the
+      // local direction from the tail's own neighboring spine points instead.
+      const tBaseIdx = Math.floor(SEG_COUNT * 0.78);
+      const baseTanX = spine[tBaseIdx + 1].x - spine[tBaseIdx - 1].x;
+      const baseTanY = spine[tBaseIdx + 1].y - spine[tBaseIdx - 1].y;
+      const baseTanLen = Math.hypot(baseTanX, baseTanY) || 1;
+      const rightBaseX = baseTanY / baseTanLen;
+      const rightBaseY = -baseTanX / baseTanLen;
+
+      const tipTanX = tailTip.x - spine[spine.length - 2].x;
+      const tipTanY = tailTip.y - spine[spine.length - 2].y;
+      const tipTanLen = Math.hypot(tipTanX, tipTanY) || 1;
+      const rightTipX = tipTanY / tipTanLen;
+      const rightTipY = -tipTanX / tipTanLen;
+
       const t1 = 1;
-      const tBase = Math.floor(SEG_COUNT * 0.78) / (SEG_COUNT - 1);
+      const tBase = tBaseIdx / (SEG_COUNT - 1);
       const waveAmpTail = reduceMotion ? 0 : 4.8 + Math.min(state.speed / 85, 1) * 2.2;
-      const steerBias = reduceMotion ? 0 : state.bank * 7;
 
       const targetLateralTip = reduceMotion
         ? 0
-        : t1 * t1 * waveAmpTail * Math.sin(WAVE_NUMBER * t1 * Math.PI * 2 - state.wavePhase) + steerBias;
+        : t1 * t1 * waveAmpTail * Math.sin(WAVE_NUMBER * t1 * Math.PI * 2 - state.wavePhase);
       const targetLateralBase = reduceMotion
         ? 0
-        : tBase * tBase * waveAmpTail * Math.sin(WAVE_NUMBER * tBase * Math.PI * 2 - state.wavePhase) + steerBias * 0.4;
+        : tBase * tBase * waveAmpTail * Math.sin(WAVE_NUMBER * tBase * Math.PI * 2 - state.wavePhase);
 
       state.tailLateral += (targetLateralTip - state.tailLateral) * lagFactor(16);
       state.tailLateralBase += (targetLateralBase - state.tailLateralBase) * lagFactor(16);
 
-      const tbX = tailBase.x + perpX * state.tailLateralBase;
-      const tbY = tailBase.y + perpY * state.tailLateralBase;
-      const ttX = tailTip.x + perpX * state.tailLateral;
-      const ttY = tailTip.y + perpY * state.tailLateral;
+      const tbX = tailBase.x + rightBaseX * state.tailLateralBase;
+      const tbY = tailBase.y + rightBaseY * state.tailLateralBase;
+      const ttX = tailTip.x + rightTipX * state.tailLateral;
+      const ttY = tailTip.y + rightTipY * state.tailLateral;
       const tailHeading = Math.atan2(ttY - tbY, ttX - tbX);
 
       tailRef.current.position.set(tbX, tbY, tailBase.z);
