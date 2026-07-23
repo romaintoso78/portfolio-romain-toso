@@ -108,8 +108,14 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       idleTimer: 0,
       head: start.clone(),
       vel: new Vector3(0, 0, 0),
-      toTarget: new Vector3(),
-      steer: new Vector3(),
+      // Explicit kinematic state: a fish can only thrust along the way it's
+      // currently facing and turn at a bounded rate — it can't strafe
+      // sideways or reverse instantly the way a free vector-steered point
+      // could. heading/speed are the authoritative values; vel is derived
+      // from them each frame (kept around only because other code reads
+      // vel.length() for the ripple-speed threshold).
+      heading: 0,
+      speed: 0,
       history,
       // Separate from history[0] on purpose: history[0] is overwritten every
       // frame to keep the tip live, so it can't also serve as the "have we
@@ -117,6 +123,10 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       // that baseline every frame and distance would never accumulate.
       lastCommit: start.clone(),
       time: 0,
+      // Traveling body-undulation phase (the S-curve wave down the length
+      // of the body). Accumulated rather than derived straight from `time`
+      // so its rate can follow current speed without discontinuities.
+      wavePhase: 0,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -186,25 +196,52 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       // cruises at its own calm, constant pace and just steers toward
       // wherever the target currently is. However fast the mouse moves,
       // the fish's own speed is capped and eases only gently in direction.
+      //
+      // It also can't strafe: it can only thrust along the way it's
+      // currently facing, and its heading can only turn at a bounded rate
+      // (like a boat/fish, not a free-floating drone) — so it banks into
+      // turns instead of snapping sideways. It also eases off its top
+      // speed the sharper the turn it's making, the way a real fish (or
+      // any swimming/steering body) slows into a tight turn.
       const cruiseSpeed = 85;
-      const maxAccel = 210;
+      // A body this long can't spin on the spot without looking like it's
+      // curling into a knot — at cruise speed this gives a turning radius
+      // roughly on the order of the koi's own length, a wide graceful arc
+      // instead of a tight loop.
+      const maxTurnRate = 0.85; // rad/s
+      const maxAccel = 160;
       const arriveRadius = 70;
 
-      state.toTarget.set(targetX - state.head.x, targetY - state.head.y, 0);
-      const dist = state.toTarget.length();
-      const desiredSpeed = dist < arriveRadius ? cruiseSpeed * (dist / arriveRadius) : cruiseSpeed;
-      if (dist > 1e-3) state.toTarget.multiplyScalar(desiredSpeed / dist);
+      const dx = targetX - state.head.x;
+      const dy = targetY - state.head.y;
+      const dist = Math.hypot(dx, dy);
+      const desiredHeading = Math.atan2(dy, dx);
 
-      state.steer.copy(state.toTarget).sub(state.vel);
-      const steerMag = state.steer.length();
-      const maxDelta = maxAccel * dt;
-      if (steerMag > maxDelta) state.steer.multiplyScalar(maxDelta / steerMag);
-      state.vel.add(state.steer);
-      if (state.vel.length() > cruiseSpeed) state.vel.setLength(cruiseSpeed);
+      let deltaAngle = desiredHeading - state.heading;
+      deltaAngle = Math.atan2(Math.sin(deltaAngle), Math.cos(deltaAngle));
+      const turnSharpness = Math.min(Math.abs(deltaAngle) / (Math.PI * 0.5), 1);
+
+      const maxDeltaAngle = maxTurnRate * dt;
+      const clampedDelta = Math.max(-maxDeltaAngle, Math.min(maxDeltaAngle, deltaAngle));
+      state.heading += clampedDelta;
+
+      const arrivalFactor = dist < arriveRadius ? dist / arriveRadius : 1;
+      const desiredSpeed = cruiseSpeed * arrivalFactor * (1 - turnSharpness * 0.3);
+      const maxSpeedDelta = maxAccel * dt;
+      state.speed += Math.max(-maxSpeedDelta, Math.min(maxSpeedDelta, desiredSpeed - state.speed));
+      if (state.speed < 0) state.speed = 0;
+
+      state.vel.x = Math.cos(state.heading) * state.speed;
+      state.vel.y = Math.sin(state.heading) * state.speed;
 
       state.head.x += state.vel.x * dt;
       state.head.y += state.vel.y * dt;
       state.head.z = Math.sin(state.time * 1.1) * 1.4;
+
+      // Undulation ripples backward along the body faster the harder the
+      // koi is swimming, and never fully stops even when idling — a real
+      // fish keeps a lazy tail sway just holding station.
+      state.wavePhase += (0.55 + state.speed * 0.022) * dt * Math.PI * 2;
 
       const distFromLast = state.head.distanceTo(state.lastCommit);
       if (distFromLast >= STEP) {
@@ -236,25 +273,24 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     // fish (fins/eyes/tail below) — worst case, the body keeps its last
     // good shape for a frame instead of the whole koi seizing up.
     try {
-      geometryRef.current = buildKoiBody(spine, RADII, geometryRef.current);
+      const waveAmp = reduceMotion ? 0 : 3.5 + Math.min(state.speed / 85, 1) * 5;
+      geometryRef.current = buildKoiBody(spine, RADII, state.wavePhase, waveAmp, geometryRef.current);
       if (bodyRef.current) bodyRef.current.geometry = geometryRef.current;
     } catch (err) {
       console.error("buildKoiBody failed", err);
     }
 
     const head = spine[0];
-    const neck = spine[1] ?? head;
     const tailBase = spine[Math.floor(SEG_COUNT * 0.78)] ?? spine[spine.length - 1];
     const tailTip = spine[spine.length - 1];
-    const heading = Math.atan2(head.y - neck.y, head.x - neck.x);
-
-    const dx = head.x - neck.x;
-    const dy = head.y - neck.y;
-    const dlen = Math.hypot(dx, dy) || 1;
-    const fwdX = dx / dlen;
-    const fwdY = dy / dlen;
-    const perpX = -dy / dlen;
-    const perpY = dx / dlen;
+    // The koi's own facing direction (state.heading) is the authoritative
+    // orientation now — steadier than re-deriving it from consecutive spine
+    // samples, which can jitter slightly frame to frame.
+    const heading = state.heading;
+    const fwdX = Math.cos(heading);
+    const fwdY = Math.sin(heading);
+    const perpX = -fwdY;
+    const perpY = fwdX;
 
     if (eyeLRef.current && eyeRRef.current) {
       const eyeOffset = 7.4;
@@ -272,11 +308,16 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       barbelRRef.current.rotation.set(0, 0, heading + Math.PI - 0.35 - sway);
     }
 
+    // How hard the koi is currently swimming — scales fin/tail motion so a
+    // lazy idle drift and a determined swim toward the cursor don't look
+    // like the exact same animation at two different speeds.
+    const speedFactor = reduceMotion ? 0 : Math.min(state.speed / 85, 1);
+
     if (finLRef.current && finRRef.current) {
       const finPoint = spine[3] ?? head;
       finLRef.current.position.set(finPoint.x, finPoint.y, finPoint.z);
       finRRef.current.position.set(finPoint.x, finPoint.y, finPoint.z);
-      const flap = reduceMotion ? 0 : Math.sin(state.time * 2.2) * 0.18;
+      const flap = reduceMotion ? 0 : Math.sin(state.wavePhase * 0.8) * (0.08 + speedFactor * 0.16);
       finLRef.current.rotation.set(Math.PI / 2 + 0.35 + flap, 0, heading + Math.PI * 0.82);
       finRRef.current.rotation.set(-Math.PI / 2 - 0.35 - flap, 0, heading - Math.PI * 0.82);
     }
@@ -291,7 +332,10 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       const tx = tailTip.x - tailBase.x;
       const ty = tailTip.y - tailBase.y;
       const tailHeading = Math.atan2(ty, tx);
-      const swish = reduceMotion ? 0 : Math.sin(state.time * 1.7) * 0.3;
+      // Synced to the same traveling wave as the body (not an independent
+      // sine) so the tail fin reads as part of the same swimming motion
+      // instead of wagging on its own separate rhythm.
+      const swish = reduceMotion ? 0 : Math.sin(state.wavePhase) * (0.18 + speedFactor * 0.22);
       tailRef.current.position.set(tailBase.x, tailBase.y, tailBase.z);
       tailRef.current.rotation.set(0, 0, tailHeading + swish);
     }

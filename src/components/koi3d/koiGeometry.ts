@@ -7,6 +7,9 @@ const RING_SEGMENTS = 20;
 const SPINE_SAMPLES = 48;
 const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
+// How many full S-bends fit along the body — real carp/koi are
+// sub-carangiform swimmers, roughly one-and-a-bit wavelengths head to tail.
+const WAVE_NUMBER = 1.25;
 
 function clampIndex(points: Vector3[], i: number): Vector3 {
   return points[Math.max(0, Math.min(points.length - 1, i))];
@@ -49,14 +52,19 @@ function radiusAt(controlRadii: number[], t: number): number {
  * much finer resolution than the sparse physics control points so the
  * silhouette reads as a continuous fish rather than a faceted polyline).
  * Cross-section is a slightly flattened, ventrally-offset ellipse — real
- * fish aren't cylinders: flatter belly, a touch of dorsal ridge. Reuses
- * `geometry` across frames when the vertex count already matches. UVs:
- * u = position along the body, v = angle around it — used to map the skin
- * texture.
+ * fish aren't cylinders: flatter belly, a touch of dorsal ridge. A lateral
+ * S-curve undulation (amplitude growing toward the tail, phase travelling
+ * backward over time via `wavePhase`) is layered on top of the base spline
+ * — the actual swimming motion of a fish's body, not just a rigid shape
+ * dragged along a path. Reuses `geometry` across frames when the vertex
+ * count already matches. UVs: u = position along the body, v = angle
+ * around it — used to map the skin texture.
  */
 export function buildKoiBody(
   controlPoints: Vector3[],
   controlRadii: number[],
+  wavePhase: number,
+  waveAmp: number,
   geometry?: BufferGeometry,
 ): BufferGeometry {
   const ringCount = SPINE_SAMPLES;
@@ -93,6 +101,17 @@ export function buildKoiBody(
     const ref = Math.abs(tangent.dot(UP)) > 0.95 ? FALLBACK_UP : UP;
     right.crossVectors(tangent, ref).normalize();
     ringUp.crossVectors(right, tangent).normalize();
+
+    // Lateral undulation: near-zero at the head, growing toward the tail,
+    // travelling backward as wavePhase advances — the S-curve swimming
+    // motion. Applied to the ring center before building its cross-section.
+    if (waveAmp > 0) {
+      const envelope = t * t;
+      const lateral = envelope * waveAmp * Math.sin(WAVE_NUMBER * t * Math.PI * 2 - wavePhase);
+      p.x += right.x * lateral;
+      p.y += right.y * lateral;
+      p.z += right.z * lateral;
+    }
 
     const radius = radiusAt(controlRadii, t);
     const width = radius;
