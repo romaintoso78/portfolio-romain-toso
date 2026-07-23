@@ -1,13 +1,18 @@
 import { BufferGeometry, BufferAttribute, Vector3 } from "three";
 
-// Rebuilt from scratch every frame (normals included), so vertex count is
-// directly the animation's per-frame cost — kept as low as still reads
-// smooth rather than as high as looks good in a static screenshot.
-const RING_SEGMENTS = 14;
+// The camera is orthographic, looking straight down the depth axis, and the
+// koi swims almost entirely in that screen plane (only a faint +/-1.4 unit
+// bob in depth) — so the ring subdivision (which mostly varies across the
+// *depth* axis) barely affects the visible silhouette, only shading
+// roundness. What actually controls how smooth the visible outline and its
+// swimming wave look is the spine's own sampling density. So the budget is
+// spent asymmetrically: fewer ring segments (cheap, low visual cost) and
+// many more spine samples (where resolution is actually seen).
+const RING_SEGMENTS = 10;
 // The physics only tracks a handful of control points (one per STEP units
 // travelled); resampling a smooth curve through them at a much higher
 // resolution avoids a faceted, polyline-y body silhouette.
-const SPINE_SAMPLES = 30;
+const SPINE_SAMPLES = 56;
 const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
 // How many full S-bends fit along the body — real carp/koi are

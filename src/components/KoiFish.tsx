@@ -45,7 +45,7 @@ export function KoiFish() {
         orthographic
         camera={{ position: [0, 0, 100], near: 0.1, far: 1000, zoom: 1 }}
         gl={{ alpha: true, antialias: true }}
-        dpr={[1, 1.5]}
+        dpr={[1, 2]}
       >
         <ambientLight ref={ambientRef} intensity={1.4} color={AMBIENT_FILL} />
         <directionalLight ref={directionalRef} position={[80, 120, 140]} intensity={3.2} color={colors.gold} />
