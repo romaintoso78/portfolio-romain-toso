@@ -340,10 +340,31 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     const perpY = fwdX;
 
     if (eyeLRef.current && eyeRRef.current) {
-      const eyeOffset = 7.4;
-      const eyeForward = 4.9;
-      eyeLRef.current.position.set(head.x + fwdX * eyeForward + perpX * eyeOffset, head.y + fwdY * eyeForward + perpY * eyeOffset, head.z);
-      eyeRRef.current.position.set(head.x + fwdX * eyeForward - perpX * eyeOffset, head.y + fwdY * eyeForward - perpY * eyeOffset, head.z);
+      // `head` is the very nose tip (RADII[0] = 4, about as narrow as the
+      // body gets) — anchoring the eyes there with a large offset put them
+      // floating outside the head entirely. Anchor instead just behind the
+      // nose, where the head has actually widened out (RADII[1] = 13), and
+      // keep the offset comfortably inside that radius so the eyes read as
+      // sitting on the face, just barely proud of the surface, not past its
+      // edge. A small upward bias matches a real fish's eye sitting in the
+      // upper half of the head rather than dead-center.
+      const eyeAnchor = spine[1] ?? head;
+      const eyeBaseX = head.x * 0.3 + eyeAnchor.x * 0.7;
+      const eyeBaseY = head.y * 0.3 + eyeAnchor.y * 0.7;
+      const eyeBaseZ = head.z * 0.3 + eyeAnchor.z * 0.7;
+      const eyeOffset = 4.6;
+      const eyeForward = 0.6;
+      const eyeUp = 1.6;
+      eyeLRef.current.position.set(
+        eyeBaseX + fwdX * eyeForward + perpX * (eyeOffset + eyeUp),
+        eyeBaseY + fwdY * eyeForward + perpY * (eyeOffset + eyeUp),
+        eyeBaseZ,
+      );
+      eyeRRef.current.position.set(
+        eyeBaseX + fwdX * eyeForward - perpX * (eyeOffset - eyeUp),
+        eyeBaseY + fwdY * eyeForward - perpY * (eyeOffset - eyeUp),
+        eyeBaseZ,
+      );
     }
 
     if (barbelLRef.current && barbelRRef.current) {
