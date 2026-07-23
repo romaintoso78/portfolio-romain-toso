@@ -17,7 +17,10 @@ const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
 // How many full S-bends fit along the body — real carp/koi are
 // sub-carangiform swimmers, roughly one-and-a-bit wavelengths head to tail.
-const WAVE_NUMBER = 1.25;
+// Exported so the tail fin (positioned in Koi.tsx, not part of this mesh)
+// can compute the exact same traveling wave instead of re-deriving its own
+// approximation of it.
+export const WAVE_NUMBER = 1.25;
 
 function clampIndex(points: Vector3[], i: number): Vector3 {
   return points[Math.max(0, Math.min(points.length - 1, i))];

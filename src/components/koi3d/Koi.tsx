@@ -9,7 +9,7 @@ import {
   MeshStandardMaterial,
   Vector3,
 } from "three";
-import { buildKoiBody } from "./koiGeometry";
+import { buildKoiBody, WAVE_NUMBER } from "./koiGeometry";
 import { tailFinGeometry, pectoralFinGeometry, dorsalFinGeometry, barbelGeometry } from "./finGeometry";
 import { readKoiColors } from "./colors";
 import { buildKoiSkinTexture } from "./skinTexture";
@@ -141,11 +141,16 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       // hovering/idling — real koi row their pectorals for station-keeping,
       // a completely different rhythm from the tail's swimming beat.
       finPhase: 0,
-      // Smoothed (lagged) rotation values for tail/fins/dorsal — a fin is a
+      // Smoothed (lagged) rotation values for fins/dorsal — a fin is a
       // soft, flexible membrane, not a rigid plate snapping to a target
       // angle every frame. Chasing the target with exponential smoothing
       // gives it inertia/flex instead of a robotic instant response.
-      tailRot: 0,
+      // The tail fin's own lag state (lateral offset, not an angle) lives
+      // just below — it derives its motion from the body's actual traveling
+      // wave rather than an independent swish, so it needs the wave's
+      // lateral displacement smoothed, not an angle.
+      tailLateral: 0,
+      tailLateralBase: 0,
       finRotL: 0,
       finRotR: 0,
       dorsalRot: 0,
@@ -416,18 +421,44 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     }
 
     if (tailRef.current) {
-      const tx = tailTip.x - tailBase.x;
-      const ty = tailTip.y - tailBase.y;
-      const tailHeading = Math.atan2(ty, tx);
-      // Synced to the same traveling wave as the body (not an independent
-      // sine) so the tail fin reads as part of the same swimming motion
-      // instead of wagging on its own separate rhythm. A short lag on top
-      // gives the fin a touch of flex/whip rather than tracking the wave
-      // rigidly.
-      const targetSwish = reduceMotion ? 0 : Math.sin(state.wavePhase) * (0.18 + speedFactor * 0.22);
-      state.tailRot += (targetSwish - state.tailRot) * lagFactor(16);
-      tailRef.current.position.set(tailBase.x, tailBase.y, tailBase.z);
-      tailRef.current.rotation.set(0, 0, tailHeading + state.tailRot);
+      // The tail's angle is derived directly from the body's own traveling
+      // wave (the exact same formula buildKoiBody paints onto the mesh),
+      // not a separate hand-tuned "swish" sine layered on top — so it reads
+      // as one continuous swimming motion instead of the tail visibly
+      // running its own independent, repeating cycle disconnected from what
+      // the rest of the body is doing.
+      //
+      // On top of that, the tail is biased by the koi's current *steering*
+      // demand (state.bank, already the smoothed turn-into-the-curve
+      // amount): a real fish doesn't beat its tail in a perfectly
+      // symmetric rhythm regardless of where it's headed — it digs the
+      // tail in on the side that actually drives the turn it's making
+      // right now, harder the sharper that turn is, and dead-neutral when
+      // swimming straight. That's what ties the tail's motion to "the
+      // movement it needs to make" rather than a canned loop.
+      const t1 = 1;
+      const tBase = Math.floor(SEG_COUNT * 0.78) / (SEG_COUNT - 1);
+      const waveAmpTail = reduceMotion ? 0 : 4.8 + Math.min(state.speed / 85, 1) * 2.2;
+      const steerBias = reduceMotion ? 0 : state.bank * 7;
+
+      const targetLateralTip = reduceMotion
+        ? 0
+        : t1 * t1 * waveAmpTail * Math.sin(WAVE_NUMBER * t1 * Math.PI * 2 - state.wavePhase) + steerBias;
+      const targetLateralBase = reduceMotion
+        ? 0
+        : tBase * tBase * waveAmpTail * Math.sin(WAVE_NUMBER * tBase * Math.PI * 2 - state.wavePhase) + steerBias * 0.4;
+
+      state.tailLateral += (targetLateralTip - state.tailLateral) * lagFactor(16);
+      state.tailLateralBase += (targetLateralBase - state.tailLateralBase) * lagFactor(16);
+
+      const tbX = tailBase.x + perpX * state.tailLateralBase;
+      const tbY = tailBase.y + perpY * state.tailLateralBase;
+      const ttX = tailTip.x + perpX * state.tailLateral;
+      const ttY = tailTip.y + perpY * state.tailLateral;
+      const tailHeading = Math.atan2(ttY - tbY, ttX - tbX);
+
+      tailRef.current.position.set(tbX, tbY, tailBase.z);
+      tailRef.current.rotation.set(0, 0, tailHeading);
     }
   });
 
