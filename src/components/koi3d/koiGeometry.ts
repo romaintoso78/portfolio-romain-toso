@@ -66,6 +66,7 @@ export function buildKoiBody(
   wavePhase: number,
   waveAmp: number,
   geometry?: BufferGeometry,
+  bankAngle = 0,
 ): BufferGeometry {
   const ringCount = SPINE_SAMPLES;
   const segCount = controlPoints.length - 1;
@@ -101,6 +102,25 @@ export function buildKoiBody(
     const ref = Math.abs(tangent.dot(UP)) > 0.95 ? FALLBACK_UP : UP;
     right.crossVectors(tangent, ref).normalize();
     ringUp.crossVectors(right, tangent).normalize();
+
+    // Bank/roll into turns, like a real swimming fish tilting its body
+    // toward the inside of a curve rather than staying perfectly upright.
+    // Rotating {right, ringUp} around the tangent axis (they're already an
+    // orthonormal frame with it) tilts the whole cross-section; the roll is
+    // let grow slightly toward the tail so the twist reads as a flex of the
+    // body rather than a rigid whole-fish rotation.
+    if (bankAngle !== 0) {
+      const bankHere = bankAngle * (0.5 + 0.5 * t);
+      const cosB = Math.cos(bankHere);
+      const sinB = Math.sin(bankHere);
+      const rx = right.x, ry = right.y, rz = right.z;
+      right.x = rx * cosB - ringUp.x * sinB;
+      right.y = ry * cosB - ringUp.y * sinB;
+      right.z = rz * cosB - ringUp.z * sinB;
+      ringUp.x = rx * sinB + ringUp.x * cosB;
+      ringUp.y = ry * sinB + ringUp.y * cosB;
+      ringUp.z = rz * sinB + ringUp.z * cosB;
+    }
 
     // Lateral undulation: near-zero at the head, growing toward the tail,
     // travelling backward as wavePhase advances — the S-curve swimming

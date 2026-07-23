@@ -60,7 +60,17 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
   // these instances does, since it's the exact object every mesh renders
   // with.
   const finMaterial = useMemo(
-    () => new MeshPhysicalMaterial({ roughness: 0.4, transparent: true, opacity: 0.55, side: DoubleSide, clearcoat: 0.3 }),
+    () =>
+      new MeshPhysicalMaterial({
+        roughness: 0.4,
+        transparent: true,
+        opacity: 0.55,
+        side: DoubleSide,
+        clearcoat: 0.3,
+        sheen: 0.6,
+        sheenRoughness: 0.35,
+        sheenColor: 0xffffff,
+      }),
     [],
   );
   const barbelMaterial = useMemo(() => new MeshStandardMaterial({ roughness: 0.5 }), []);
@@ -127,6 +137,20 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       // of the body). Accumulated rather than derived straight from `time`
       // so its rate can follow current speed without discontinuities.
       wavePhase: 0,
+      // Independent slow oscillator driving pectoral-fin sculling while
+      // hovering/idling — real koi row their pectorals for station-keeping,
+      // a completely different rhythm from the tail's swimming beat.
+      finPhase: 0,
+      // Smoothed (lagged) rotation values for tail/fins/dorsal — a fin is a
+      // soft, flexible membrane, not a rigid plate snapping to a target
+      // angle every frame. Chasing the target with exponential smoothing
+      // gives it inertia/flex instead of a robotic instant response.
+      tailRot: 0,
+      finRotL: 0,
+      finRotR: 0,
+      dorsalRot: 0,
+      // Current body roll/bank into turns (radians), smoothed the same way.
+      bank: 0,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -212,10 +236,19 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       const maxAccel = 160;
       const arriveRadius = 70;
 
+      // Quasi-noise: a couple of incommensurate sine waves summed together.
+      // Fully deterministic (no drift/accumulation risk), but doesn't repeat
+      // on a short obvious period the way a single sine would — enough to
+      // break up the motion's perfect regularity without ever looking random
+      // or jittery. Used as a tiny organic wobble on top of the pure
+      // steering logic, the way no real swimming animal tracks a target
+      // along a mathematically perfect path.
+      const noise = Math.sin(state.time * 0.83) * 0.6 + Math.sin(state.time * 1.97 + 1.4) * 0.4;
+
       const dx = targetX - state.head.x;
       const dy = targetY - state.head.y;
       const dist = Math.hypot(dx, dy);
-      const desiredHeading = Math.atan2(dy, dx);
+      const desiredHeading = Math.atan2(dy, dx) + noise * 0.05;
 
       let deltaAngle = desiredHeading - state.heading;
       deltaAngle = Math.atan2(Math.sin(deltaAngle), Math.cos(deltaAngle));
@@ -226,7 +259,7 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       state.heading += clampedDelta;
 
       const arrivalFactor = dist < arriveRadius ? dist / arriveRadius : 1;
-      const desiredSpeed = cruiseSpeed * arrivalFactor * (1 - turnSharpness * 0.3);
+      const desiredSpeed = cruiseSpeed * arrivalFactor * (1 - turnSharpness * 0.3) * (1 + noise * 0.04);
       const maxSpeedDelta = maxAccel * dt;
       state.speed += Math.max(-maxSpeedDelta, Math.min(maxSpeedDelta, desiredSpeed - state.speed));
       if (state.speed < 0) state.speed = 0;
@@ -238,10 +271,22 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       state.head.y += state.vel.y * dt;
       state.head.z = Math.sin(state.time * 1.1) * 1.4;
 
-      // Undulation ripples backward along the body faster the harder the
-      // koi is swimming, and never fully stops even when idling — a real
-      // fish keeps a lazy tail sway just holding station.
-      state.wavePhase += (0.55 + state.speed * 0.022) * dt * Math.PI * 2;
+      // Real fish scale up mostly by beating the tail *faster*, not wider —
+      // swimmers converge on a near-constant Strouhal number (tailbeat
+      // frequency * amplitude / speed, ~0.2-0.4) across their whole speed
+      // range, which in practice means frequency does almost all the work
+      // and amplitude barely grows. It never fully stops even at rest — a
+      // real fish keeps a lazy tail sway just holding station.
+      const speedFrac = Math.min(state.speed / cruiseSpeed, 1);
+      state.wavePhase += (0.55 + speedFrac * 2.35) * dt * Math.PI * 2;
+
+      // Bank into the turn (roll toward the inside of the curve) — the
+      // faster the koi is turning right now, the more it tilts, eased
+      // toward that target with its own lag so the roll settles in and out
+      // smoothly instead of snapping with the steering.
+      const turnRate = dt > 0 ? clampedDelta / dt : 0;
+      const targetBank = Math.max(-0.55, Math.min(0.55, turnRate * 0.4));
+      state.bank += (targetBank - state.bank) * Math.min(1, dt * 5);
 
       const distFromLast = state.head.distanceTo(state.lastCommit);
       if (distFromLast >= STEP) {
@@ -273,8 +318,10 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     // fish (fins/eyes/tail below) — worst case, the body keeps its last
     // good shape for a frame instead of the whole koi seizing up.
     try {
-      const waveAmp = reduceMotion ? 0 : 3.5 + Math.min(state.speed / 85, 1) * 5;
-      geometryRef.current = buildKoiBody(spine, RADII, state.wavePhase, waveAmp, geometryRef.current);
+      // Amplitude stays close to constant across speeds (see the Strouhal
+      // note above) — frequency is what carries the "swimming harder" read.
+      const waveAmp = reduceMotion ? 0 : 4.8 + Math.min(state.speed / 85, 1) * 2.2;
+      geometryRef.current = buildKoiBody(spine, RADII, state.wavePhase, waveAmp, geometryRef.current, reduceMotion ? 0 : state.bank);
       if (bodyRef.current) bodyRef.current.geometry = geometryRef.current;
     } catch (err) {
       console.error("buildKoiBody failed", err);
@@ -312,20 +359,39 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     // lazy idle drift and a determined swim toward the cursor don't look
     // like the exact same animation at two different speeds.
     const speedFactor = reduceMotion ? 0 : Math.min(state.speed / 85, 1);
+    // Framerate-independent exponential smoothing factor for a given lag
+    // rate (higher = snappier/less lag, lower = softer/more trailing flex).
+    const lagFactor = (rate: number) => (reduceMotion ? 1 : Math.min(1, dt * rate));
+
+    if (!reduceMotion) state.finPhase += (1.7 + speedFactor * 0.3) * dt * Math.PI * 2;
 
     if (finLRef.current && finRRef.current) {
       const finPoint = spine[3] ?? head;
       finLRef.current.position.set(finPoint.x, finPoint.y, finPoint.z);
       finRRef.current.position.set(finPoint.x, finPoint.y, finPoint.z);
-      const flap = reduceMotion ? 0 : Math.sin(state.wavePhase * 0.8) * (0.08 + speedFactor * 0.16);
-      finLRef.current.rotation.set(Math.PI / 2 + 0.35 + flap, 0, heading + Math.PI * 0.82);
-      finRRef.current.rotation.set(-Math.PI / 2 - 0.35 - flap, 0, heading - Math.PI * 0.82);
+
+      // Two very different behaviours blended by speed: near-rest, a koi
+      // rows its pectorals independently (opposing phase) to hold station;
+      // cruising, they tuck back close to the body and just trail the
+      // swimming wave passively. Blending rather than switching means there's
+      // no visible mode change as the koi speeds up or slows down.
+      const hoverAmt = reduceMotion ? 0 : 1 - speedFactor;
+      const cruiseFlap = reduceMotion ? 0 : Math.sin(state.wavePhase * 0.8) * (0.05 + speedFactor * 0.12);
+      const targetL = 0.35 + cruiseFlap + Math.sin(state.finPhase) * 0.5 * hoverAmt;
+      const targetR = 0.35 + cruiseFlap + Math.sin(state.finPhase + Math.PI) * 0.5 * hoverAmt;
+      state.finRotL += (targetL - state.finRotL) * lagFactor(9);
+      state.finRotR += (targetR - state.finRotR) * lagFactor(9);
+      const tuck = speedFactor * 0.1;
+      finLRef.current.rotation.set(Math.PI / 2 + state.finRotL, 0, heading + Math.PI * (0.82 + tuck));
+      finRRef.current.rotation.set(-Math.PI / 2 - state.finRotR, 0, heading - Math.PI * (0.82 + tuck));
     }
 
     if (dorsalRef.current) {
       const dorsalPoint = spine[5] ?? head;
       dorsalRef.current.position.set(dorsalPoint.x, dorsalPoint.y, dorsalPoint.z + 1);
-      dorsalRef.current.rotation.set(0, 0, heading + Math.PI / 2);
+      const targetDorsal = reduceMotion ? 0 : Math.sin(state.wavePhase * 0.8 + 0.6) * (0.03 + speedFactor * 0.05);
+      state.dorsalRot += (targetDorsal - state.dorsalRot) * lagFactor(7);
+      dorsalRef.current.rotation.set(0, 0, heading + Math.PI / 2 + state.dorsalRot);
     }
 
     if (tailRef.current) {
@@ -334,10 +400,13 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       const tailHeading = Math.atan2(ty, tx);
       // Synced to the same traveling wave as the body (not an independent
       // sine) so the tail fin reads as part of the same swimming motion
-      // instead of wagging on its own separate rhythm.
-      const swish = reduceMotion ? 0 : Math.sin(state.wavePhase) * (0.18 + speedFactor * 0.22);
+      // instead of wagging on its own separate rhythm. A short lag on top
+      // gives the fin a touch of flex/whip rather than tracking the wave
+      // rigidly.
+      const targetSwish = reduceMotion ? 0 : Math.sin(state.wavePhase) * (0.18 + speedFactor * 0.22);
+      state.tailRot += (targetSwish - state.tailRot) * lagFactor(16);
       tailRef.current.position.set(tailBase.x, tailBase.y, tailBase.z);
-      tailRef.current.rotation.set(0, 0, tailHeading + swish);
+      tailRef.current.rotation.set(0, 0, tailHeading + state.tailRot);
     }
   });
 
@@ -352,6 +421,9 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
           clearcoatRoughness={0.25}
           iridescence={0.2}
           iridescenceIOR={1.3}
+          sheen={0.4}
+          sheenRoughness={0.5}
+          sheenColor={0xffffff}
         />
       </mesh>
 
