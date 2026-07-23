@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
+import { Color } from "three";
 import type { AmbientLight, DirectionalLight, PointLight } from "three";
 import { Koi } from "./koi3d/Koi";
 import { Ripples, type RippleSpawner } from "./koi3d/Ripples";
 import { readKoiColors } from "./koi3d/colors";
+
+// A near-black ambient (matching the ink theme) sounds right but leaves
+// almost nothing lighting surfaces that don't directly face the directional/
+// point lights — the koi read as near-silhouette. Neutral, bright-ish fill
+// light instead; the gold/shu lights below still carry all the mood/color.
+const AMBIENT_FILL = new Color("#fbf6ea");
 
 export function KoiFish() {
   const reduceMotion = useMemo(
@@ -24,7 +31,6 @@ export function KoiFish() {
   useEffect(() => {
     const update = () => {
       const c = readKoiColors();
-      ambientRef.current?.color.copy(c.ink);
       directionalRef.current?.color.copy(c.gold);
       pointRef.current?.color.copy(c.shu);
     };
@@ -41,9 +47,9 @@ export function KoiFish() {
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]}
       >
-        <ambientLight ref={ambientRef} intensity={0.55} color={colors.ink} />
-        <directionalLight ref={directionalRef} position={[80, 120, 140]} intensity={1.4} color={colors.gold} />
-        <pointLight ref={pointRef} position={[-100, -60, 60]} intensity={0.5} color={colors.shu} />
+        <ambientLight ref={ambientRef} intensity={1.4} color={AMBIENT_FILL} />
+        <directionalLight ref={directionalRef} position={[80, 120, 140]} intensity={3.2} color={colors.gold} />
+        <pointLight ref={pointRef} position={[-100, -60, 60]} intensity={2.2} decay={0} color={colors.shu} />
 
         <Koi reduceMotion={reduceMotion} spawnerRef={spawnerRef} />
         <Ripples spawnerRef={spawnerRef} />

@@ -21,12 +21,12 @@ const SEG_COUNT = 14;
 // (points spread far apart) and bunch up into a blob when it slows down or
 // stops (points all land on top of each other). This keeps its length
 // constant no matter the speed.
-const STEP = 4.6;
+const STEP = 8.3;
 const HISTORY_MAX = SEG_COUNT + 6;
 // Blunt rounded head, thick midsection, a pinched peduncle just before the
 // tail fin — a smooth torpedo taper reads more like a slug than a fish.
 const RADII = [
-  2.2, 7.2, 10.6, 12.4, 12.8, 12.4, 11.4, 9.8, 8, 5.8, 3.6, 2.1, 1.3, 0.6,
+  4, 13, 19, 22.3, 23, 22.3, 20.5, 17.6, 14.4, 10.4, 6.5, 3.8, 2.3, 1.1,
 ];
 
 interface KoiProps {
@@ -50,7 +50,7 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
   const tailGeo = useMemo(() => tailFinGeometry(), []);
   const pectoralGeo = useMemo(() => pectoralFinGeometry(), []);
   const dorsalGeo = useMemo(() => dorsalFinGeometry(), []);
-  const barbelGeo = useMemo(() => barbelGeometry(9), []);
+  const barbelGeo = useMemo(() => barbelGeometry(16), []);
   const skinTexture = useMemo(() => buildKoiSkinTexture(readKoiColors()), []);
 
   // Shared material *instances* (not JSX color props) for every fin/eye/
@@ -111,6 +111,11 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       toTarget: new Vector3(),
       steer: new Vector3(),
       history,
+      // Separate from history[0] on purpose: history[0] is overwritten every
+      // frame to keep the tip live, so it can't also serve as the "have we
+      // moved STEP units yet" baseline — comparing against it would reset
+      // that baseline every frame and distance would never accumulate.
+      lastCommit: start.clone(),
       time: 0,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -201,13 +206,15 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       state.head.y += state.vel.y * dt;
       state.head.z = Math.sin(state.time * 1.1) * 1.4;
 
-      const distFromLast = state.history.length > 0 ? state.head.distanceTo(state.history[0]) : Infinity;
+      const distFromLast = state.head.distanceTo(state.lastCommit);
       if (distFromLast >= STEP) {
         state.history.unshift(state.head.clone());
         if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
+        state.lastCommit.copy(state.head);
       } else {
         // Still update the very tip continuously so the head doesn't lag
-        // a full STEP behind while easing into a stop.
+        // a full STEP behind while easing into a stop — this does NOT
+        // affect the distFromLast baseline above (that's lastCommit).
         state.history[0] = state.head.clone();
       }
 
@@ -250,15 +257,15 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     const perpY = dx / dlen;
 
     if (eyeLRef.current && eyeRRef.current) {
-      const eyeOffset = 4.1;
-      const eyeForward = 2.7;
+      const eyeOffset = 7.4;
+      const eyeForward = 4.9;
       eyeLRef.current.position.set(head.x + fwdX * eyeForward + perpX * eyeOffset, head.y + fwdY * eyeForward + perpY * eyeOffset, head.z);
       eyeRRef.current.position.set(head.x + fwdX * eyeForward - perpX * eyeOffset, head.y + fwdY * eyeForward - perpY * eyeOffset, head.z);
     }
 
     if (barbelLRef.current && barbelRRef.current) {
       const sway = reduceMotion ? 0 : Math.sin(state.time * 1.3) * 0.12;
-      const barbelOffset = 2.7;
+      const barbelOffset = 4.9;
       barbelLRef.current.position.set(head.x + perpX * barbelOffset, head.y + perpY * barbelOffset, head.z - 1);
       barbelRRef.current.position.set(head.x - perpX * barbelOffset, head.y - perpY * barbelOffset, head.z - 1);
       barbelLRef.current.rotation.set(0, 0, heading + Math.PI + 0.35 + sway);
@@ -295,26 +302,26 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       <mesh ref={bodyRef}>
         <meshPhysicalMaterial
           map={skinTexture}
-          roughness={0.32}
-          metalness={0.03}
-          clearcoat={0.65}
-          clearcoatRoughness={0.18}
-          iridescence={0.3}
+          roughness={0.4}
+          metalness={0.02}
+          clearcoat={0.5}
+          clearcoatRoughness={0.25}
+          iridescence={0.2}
           iridescenceIOR={1.3}
         />
       </mesh>
 
       <group ref={tailRef}>
-        <mesh geometry={tailGeo} material={finMaterial} scale={1.5} />
+        <mesh geometry={tailGeo} material={finMaterial} scale={2.7} />
       </group>
       <group ref={finLRef}>
-        <mesh geometry={pectoralGeo} material={finMaterial} scale={1.3} />
+        <mesh geometry={pectoralGeo} material={finMaterial} scale={2.3} />
       </group>
       <group ref={finRRef}>
-        <mesh geometry={pectoralGeo} material={finMaterial} scale={1.3} />
+        <mesh geometry={pectoralGeo} material={finMaterial} scale={2.3} />
       </group>
       <group ref={dorsalRef}>
-        <mesh geometry={dorsalGeo} material={finMaterial} scale={1.3} />
+        <mesh geometry={dorsalGeo} material={finMaterial} scale={2.3} />
       </group>
 
       <group ref={eyeLRef}>
