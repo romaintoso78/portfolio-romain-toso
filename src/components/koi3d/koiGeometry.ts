@@ -1,4 +1,4 @@
-import { BufferGeometry, BufferAttribute, CatmullRomCurve3, Vector3 } from "three";
+import { BufferGeometry, BufferAttribute, Vector3 } from "three";
 
 const RING_SEGMENTS = 20;
 // The physics only tracks a handful of control points (one per STEP units
@@ -7,6 +7,33 @@ const RING_SEGMENTS = 20;
 const SPINE_SAMPLES = 48;
 const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
+
+function clampIndex(points: Vector3[], i: number): Vector3 {
+  return points[Math.max(0, Math.min(points.length - 1, i))];
+}
+
+/**
+ * Uniform Catmull-Rom position, hand-rolled (no three.js Curve class): a
+ * closed-form cubic in `localT`, only additions/multiplications — no
+ * distance-based weighting or arc-length remapping, so it can't produce
+ * NaN/degenerate results from closely-spaced or duplicate control points
+ * the way three.js's getTangentAt/getUtoTmapping machinery could.
+ */
+function catmullRomPoint(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: number, out: Vector3) {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  out.x = 0.5 * (2 * p1.x + (p2.x - p0.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (3 * p1.x - p0.x - 3 * p2.x + p3.x) * t3);
+  out.y = 0.5 * (2 * p1.y + (p2.y - p0.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (3 * p1.y - p0.y - 3 * p2.y + p3.y) * t3);
+  out.z = 0.5 * (2 * p1.z + (p2.z - p0.z) * t + (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t2 + (3 * p1.z - p0.z - 3 * p2.z + p3.z) * t3);
+}
+
+/** Analytical derivative of the same cubic — the spline's tangent direction. */
+function catmullRomTangent(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: number, out: Vector3) {
+  const t2 = t * t;
+  out.x = 0.5 * ((p2.x - p0.x) + 2 * (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t + 3 * (3 * p1.x - p0.x - 3 * p2.x + p3.x) * t2);
+  out.y = 0.5 * ((p2.y - p0.y) + 2 * (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t + 3 * (3 * p1.y - p0.y - 3 * p2.y + p3.y) * t2);
+  out.z = 0.5 * ((p2.z - p0.z) + 2 * (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t + 3 * (3 * p1.z - p0.z - 3 * p2.z + p3.z) * t2);
+}
 
 function radiusAt(controlRadii: number[], t: number): number {
   const scaled = t * (controlRadii.length - 1);
@@ -18,22 +45,22 @@ function radiusAt(controlRadii: number[], t: number): number {
 
 /**
  * Builds (or refreshes) a tapered body around a smooth curve through the
- * given control points (a Catmull-Rom spline, resampled at a much finer
- * resolution than the sparse physics control points so the silhouette
- * reads as a continuous fish rather than a faceted polyline). Cross-section
- * is a slightly flattened, ventrally-offset ellipse — real fish aren't
- * cylinders: flatter belly, a touch of dorsal ridge. Reuses `geometry`
- * across frames when the vertex count already matches. UVs: u = position
- * along the body, v = angle around it — used to map the skin texture.
+ * given control points (a hand-rolled Catmull-Rom spline, resampled at a
+ * much finer resolution than the sparse physics control points so the
+ * silhouette reads as a continuous fish rather than a faceted polyline).
+ * Cross-section is a slightly flattened, ventrally-offset ellipse — real
+ * fish aren't cylinders: flatter belly, a touch of dorsal ridge. Reuses
+ * `geometry` across frames when the vertex count already matches. UVs:
+ * u = position along the body, v = angle around it — used to map the skin
+ * texture.
  */
 export function buildKoiBody(
   controlPoints: Vector3[],
   controlRadii: number[],
   geometry?: BufferGeometry,
 ): BufferGeometry {
-  const curve = new CatmullRomCurve3(controlPoints, false, "catmullrom", 0.4);
   const ringCount = SPINE_SAMPLES;
-  const points = curve.getPoints(ringCount - 1);
+  const segCount = controlPoints.length - 1;
 
   const vertsNeeded = ringCount * RING_SEGMENTS;
   const geo = geometry ?? new BufferGeometry();
@@ -42,15 +69,24 @@ export function buildKoiBody(
   const positions = reuse ? (geo.getAttribute("position").array as Float32Array) : new Float32Array(vertsNeeded * 3);
   const uvs = reuse ? (geo.getAttribute("uv").array as Float32Array) : new Float32Array(vertsNeeded * 2);
 
+  const p = new Vector3();
   const tangent = new Vector3();
   const right = new Vector3();
   const ringUp = new Vector3();
 
   for (let i = 0; i < ringCount; i++) {
-    const p = points[i];
     const t = i / (ringCount - 1);
+    const scaled = t * segCount;
+    const k = Math.min(Math.floor(scaled), segCount - 1);
+    const localT = scaled - k;
 
-    curve.getTangent(t, tangent);
+    const p0 = clampIndex(controlPoints, k - 1);
+    const p1 = clampIndex(controlPoints, k);
+    const p2 = clampIndex(controlPoints, k + 1);
+    const p3 = clampIndex(controlPoints, k + 2);
+
+    catmullRomPoint(p0, p1, p2, p3, localT, p);
+    catmullRomTangent(p0, p1, p2, p3, localT, tangent);
     if (tangent.lengthSq() < 1e-6) tangent.set(1, 0, 0);
     tangent.normalize();
 

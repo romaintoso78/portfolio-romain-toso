@@ -232,7 +232,7 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       geometryRef.current = buildKoiBody(spine, RADII, geometryRef.current);
       if (bodyRef.current) bodyRef.current.geometry = geometryRef.current;
     } catch (err) {
-      if (import.meta.env.DEV) console.error("buildKoiBody failed", err);
+      console.error("buildKoiBody failed", err);
     }
 
     const head = spine[0];
