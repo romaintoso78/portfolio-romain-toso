@@ -40,7 +40,7 @@ export function KoiFish() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+    <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
       <Canvas
         orthographic
         camera={{ position: [0, 0, 100], near: 0.1, far: 1000, zoom: 1 }}
