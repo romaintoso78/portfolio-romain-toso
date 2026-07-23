@@ -51,18 +51,37 @@ export function buildKoiSkinTexture(colors: KoiColors, seed = 1, existing?: Canv
     return rand / 233280;
   };
 
-  const patches: { cx: number; cy: number; r: number; deep: boolean }[] = [];
-  const patchCount = 6 + Math.floor(next() * 3);
-  for (let i = 0; i < patchCount; i++) {
-    patches.push({
-      cx: next() * W,
+  // Bold hi (red/orange) and gold patches spread across the whole body —
+  // this is the base Kohaku-style pattern, drawn first (further from the
+  // head, larger and more of them, matching a real koi's dominant hi
+  // saddle over the back and flanks).
+  const bodyPatches: { cx: number; cy: number; r: number; deep: boolean }[] = [];
+  const bodyPatchCount = 3 + Math.floor(next() * 3);
+  for (let i = 0; i < bodyPatchCount; i++) {
+    bodyPatches.push({
+      cx: W * 0.28 + next() * W * 0.72,
       cy: next() * H,
-      r: 60 + next() * 130,
+      r: 50 + next() * 100,
       deep: next() > 0.55,
     });
   }
 
-  for (const p of patches) {
+  // Sumi (black/navy) patches — real Showa/Sanke-style koi carry these
+  // concentrated over the head and shoulder, not scattered evenly down the
+  // whole body, so they're biased hard toward the front third (x is
+  // head-to-tail position here). Fewer, smaller, and bolder than the hi
+  // patches — a visual anchor rather than a wash of color.
+  const sumiPatches: { cx: number; cy: number; r: number }[] = [];
+  const sumiPatchCount = 2 + Math.floor(next() * 2);
+  for (let i = 0; i < sumiPatchCount; i++) {
+    sumiPatches.push({
+      cx: next() * W * 0.4,
+      cy: next() * H,
+      r: 24 + next() * 34,
+    });
+  }
+
+  for (const p of bodyPatches) {
     for (const dy of [-H, 0, H]) {
       // soft dark kiwa edge halo
       ctx.save();
@@ -77,6 +96,18 @@ export function buildKoiSkinTexture(colors: KoiColors, seed = 1, existing?: Canv
       ctx.fillStyle = `#${(p.deep ? colors.shu : colors.gold).getHexString()}`;
       blob(ctx, p.cx, p.cy + dy, p.r, 0.22, p.cx + p.cy);
       ctx.fill();
+    }
+  }
+
+  for (const p of sumiPatches) {
+    for (const dy of [-H, 0, H]) {
+      ctx.save();
+      ctx.filter = "blur(4px)";
+      ctx.fillStyle = `#${colors.ink.getHexString()}`;
+      ctx.globalAlpha = 0.9;
+      blob(ctx, p.cx, p.cy + dy, p.r, 0.3, p.cx + p.cy + 7);
+      ctx.fill();
+      ctx.restore();
     }
   }
 

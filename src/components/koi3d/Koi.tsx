@@ -412,7 +412,7 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
 
   return (
     <group>
-      <mesh ref={bodyRef}>
+      <mesh ref={bodyRef} frustumCulled={false}>
         <meshPhysicalMaterial
           map={skinTexture}
           roughness={0.4}
@@ -428,16 +428,16 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       </mesh>
 
       <group ref={tailRef}>
-        <mesh geometry={tailGeo} material={finMaterial} scale={2.7} />
+        <mesh geometry={tailGeo} material={finMaterial} scale={2.5} />
       </group>
       <group ref={finLRef}>
-        <mesh geometry={pectoralGeo} material={finMaterial} scale={2.3} />
+        <mesh geometry={pectoralGeo} material={finMaterial} scale={2.6} />
       </group>
       <group ref={finRRef}>
-        <mesh geometry={pectoralGeo} material={finMaterial} scale={2.3} />
+        <mesh geometry={pectoralGeo} material={finMaterial} scale={2.6} />
       </group>
       <group ref={dorsalRef}>
-        <mesh geometry={dorsalGeo} material={finMaterial} scale={2.3} />
+        <mesh geometry={dorsalGeo} material={finMaterial} scale={2.5} />
       </group>
 
       <group ref={eyeLRef}>

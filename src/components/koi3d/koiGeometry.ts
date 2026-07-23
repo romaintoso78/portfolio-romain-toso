@@ -1,10 +1,13 @@
 import { BufferGeometry, BufferAttribute, Vector3 } from "three";
 
-const RING_SEGMENTS = 20;
+// Rebuilt from scratch every frame (normals included), so vertex count is
+// directly the animation's per-frame cost — kept as low as still reads
+// smooth rather than as high as looks good in a static screenshot.
+const RING_SEGMENTS = 14;
 // The physics only tracks a handful of control points (one per STEP units
 // travelled); resampling a smooth curve through them at a much higher
 // resolution avoids a faceted, polyline-y body silhouette.
-const SPINE_SAMPLES = 48;
+const SPINE_SAMPLES = 30;
 const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
 // How many full S-bends fit along the body — real carp/koi are
@@ -176,6 +179,10 @@ export function buildKoiBody(
   }
 
   geo.computeVertexNormals();
-  geo.computeBoundingSphere();
+  // No computeBoundingSphere here: it's an O(vertices) pass whose only
+  // consumer is frustum culling, which the mesh has disabled (frustumCulled
+  // = false in Koi.tsx — a fixed background element that's always at least
+  // partially on screen) — recomputing it every single frame was pure
+  // wasted work on the animation's hot path.
   return geo;
 }
