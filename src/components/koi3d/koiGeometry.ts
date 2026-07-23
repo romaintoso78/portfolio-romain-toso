@@ -44,7 +44,6 @@ export function buildKoiBody(
 
     const radius = radii[i] ?? 0.05;
     const t = ringCount > 1 ? i / (ringCount - 1) : 0;
-    bodyColorAt(colors, t, tmpColor);
 
     for (let s = 0; s < RING_SEGMENTS; s++) {
       const theta = (s / RING_SEGMENTS) * Math.PI * 2;
@@ -56,6 +55,7 @@ export function buildKoiBody(
       positions[idx + 1] = p.y + (right.y * cos + ringUp.y * sin) * radius;
       positions[idx + 2] = p.z + (right.z * cos + ringUp.z * sin) * radius;
 
+      bodyColorAt(colors, t, theta, tmpColor);
       colorsArr[idx] = tmpColor.r;
       colorsArr[idx + 1] = tmpColor.g;
       colorsArr[idx + 2] = tmpColor.b;

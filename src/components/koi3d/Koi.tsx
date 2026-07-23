@@ -9,7 +9,9 @@ import type { RippleSpawner } from "./Ripples";
 const SEG_COUNT = 11;
 const LAG = 4;
 const HISTORY_MAX = SEG_COUNT * LAG + 20;
-const RADII = [0, 3.4, 5.6, 7.2, 8, 7.6, 6.4, 4.8, 3.2, 1.8, 0.4];
+// Blunt rounded head, thick midsection, a pinched peduncle just before the
+// tail fin — a smooth torpedo taper reads more like a slug than a fish.
+const RADII = [1.1, 4.4, 6.6, 7.8, 8, 7.2, 5.6, 3.6, 1.9, 1.1, 0.5];
 
 interface KoiProps {
   reduceMotion: boolean;
@@ -23,6 +25,8 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
   const finLRef = useRef<Group>(null);
   const finRRef = useRef<Group>(null);
   const dorsalRef = useRef<Group>(null);
+  const eyeLRef = useRef<Group>(null);
+  const eyeRRef = useRef<Group>(null);
   const geometryRef = useRef<BufferGeometry | undefined>(undefined);
 
   const tailGeo = useMemo(() => tailFinGeometry(), []);
@@ -45,6 +49,8 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       idleTimer: 0,
       head: start.clone(),
       vel: new Vector3(0, 0, 0),
+      toTarget: new Vector3(),
+      steer: new Vector3(),
       history,
       time: 0,
     };
@@ -112,21 +118,35 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
         targetY = state.idleTarget.y;
       }
 
-      const stiffness = 85;
-      const damping = 11.5;
-      const ax = (targetX - state.head.x) * stiffness - state.vel.x * damping;
-      const ay = (targetY - state.head.y) * stiffness - state.vel.y * damping;
-      state.vel.x += ax * dt;
-      state.vel.y += ay * dt;
+      // A real koi never darts to match how fast you move the cursor — it
+      // cruises at its own calm, constant pace and just steers toward
+      // wherever the target currently is. However fast the mouse moves,
+      // the fish's own speed is capped and eases only gently in direction.
+      const cruiseSpeed = 85;
+      const maxAccel = 210;
+      const arriveRadius = 70;
+
+      state.toTarget.set(targetX - state.head.x, targetY - state.head.y, 0);
+      const dist = state.toTarget.length();
+      const desiredSpeed = dist < arriveRadius ? cruiseSpeed * (dist / arriveRadius) : cruiseSpeed;
+      if (dist > 1e-3) state.toTarget.multiplyScalar(desiredSpeed / dist);
+
+      state.steer.copy(state.toTarget).sub(state.vel);
+      const steerMag = state.steer.length();
+      const maxDelta = maxAccel * dt;
+      if (steerMag > maxDelta) state.steer.multiplyScalar(maxDelta / steerMag);
+      state.vel.add(state.steer);
+      if (state.vel.length() > cruiseSpeed) state.vel.setLength(cruiseSpeed);
+
       state.head.x += state.vel.x * dt;
       state.head.y += state.vel.y * dt;
-      state.head.z = Math.sin(state.time * 1.6) * 1.6;
+      state.head.z = Math.sin(state.time * 1.1) * 1.4;
 
       state.history.unshift(state.head.clone());
       if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
 
-      const speed = Math.hypot(state.vel.x, state.vel.y);
-      if (speed > 90 && Math.random() < 0.05) {
+      const speed = state.vel.length();
+      if (speed > cruiseSpeed * 0.7 && Math.random() < 0.03) {
         spawnerRef.current?.spawn(state.head.x, state.head.y);
       }
     }
@@ -149,11 +169,31 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     const tailTip = spine[spine.length - 1];
     const heading = Math.atan2(head.y - neck.y, head.x - neck.x);
 
+    if (eyeLRef.current && eyeRRef.current) {
+      const dx = head.x - neck.x;
+      const dy = head.y - neck.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const perpX = -dy / len;
+      const perpY = dx / len;
+      const eyeOffset = 2.6;
+      const eyeForward = 1.5;
+      eyeLRef.current.position.set(
+        head.x + (dx / len) * eyeForward + perpX * eyeOffset,
+        head.y + (dy / len) * eyeForward + perpY * eyeOffset,
+        head.z,
+      );
+      eyeRRef.current.position.set(
+        head.x + (dx / len) * eyeForward - perpX * eyeOffset,
+        head.y + (dy / len) * eyeForward - perpY * eyeOffset,
+        head.z,
+      );
+    }
+
     if (finLRef.current && finRRef.current) {
       const finPoint = spine[2] ?? head;
       finLRef.current.position.set(finPoint.x, finPoint.y, finPoint.z);
       finRRef.current.position.set(finPoint.x, finPoint.y, finPoint.z);
-      const flap = reduceMotion ? 0 : Math.sin(state.time * 5) * 0.25;
+      const flap = reduceMotion ? 0 : Math.sin(state.time * 2.4) * 0.16;
       finLRef.current.rotation.set(Math.PI / 2 + 0.3 + flap, 0, heading + Math.PI * 0.85);
       finRRef.current.rotation.set(-Math.PI / 2 - 0.3 - flap, 0, heading - Math.PI * 0.85);
     }
@@ -168,38 +208,60 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       const tx = tailTip.x - tailBase.x;
       const ty = tailTip.y - tailBase.y;
       const tailHeading = Math.atan2(ty, tx);
-      const swish = reduceMotion ? 0 : Math.sin(state.time * 3.2) * 0.35;
+      const swish = reduceMotion ? 0 : Math.sin(state.time * 1.7) * 0.28;
       tailRef.current.position.set(tailBase.x, tailBase.y, tailBase.z);
       tailRef.current.rotation.set(0, 0, tailHeading + swish);
     }
   });
 
   const inkColor = useMemo(() => readKoiColors().ink, []);
+  const finColor = useMemo(() => readKoiColors().paper, []);
 
   return (
     <group>
       <mesh ref={bodyRef}>
-        <meshPhysicalMaterial vertexColors roughness={0.35} metalness={0.05} clearcoat={0.5} clearcoatRoughness={0.25} />
+        <meshPhysicalMaterial
+          vertexColors
+          roughness={0.3}
+          metalness={0.04}
+          clearcoat={0.6}
+          clearcoatRoughness={0.2}
+          iridescence={0.35}
+          iridescenceIOR={1.3}
+        />
       </mesh>
 
       <group ref={tailRef}>
-        <mesh geometry={tailGeo} scale={0.55}>
-          <meshStandardMaterial color={inkColor} roughness={0.5} transparent opacity={0.88} side={DoubleSide} />
+        <mesh geometry={tailGeo} scale={0.6}>
+          <meshPhysicalMaterial color={finColor} roughness={0.4} transparent opacity={0.55} side={DoubleSide} clearcoat={0.3} />
         </mesh>
       </group>
       <group ref={finLRef}>
-        <mesh geometry={finGeo} scale={0.5}>
-          <meshStandardMaterial color={inkColor} roughness={0.5} transparent opacity={0.8} side={DoubleSide} />
+        <mesh geometry={finGeo} scale={0.55}>
+          <meshPhysicalMaterial color={finColor} roughness={0.4} transparent opacity={0.5} side={DoubleSide} clearcoat={0.3} />
         </mesh>
       </group>
       <group ref={finRRef}>
-        <mesh geometry={finGeo} scale={0.5}>
-          <meshStandardMaterial color={inkColor} roughness={0.5} transparent opacity={0.8} side={DoubleSide} />
+        <mesh geometry={finGeo} scale={0.55}>
+          <meshPhysicalMaterial color={finColor} roughness={0.4} transparent opacity={0.5} side={DoubleSide} clearcoat={0.3} />
         </mesh>
       </group>
       <group ref={dorsalRef}>
-        <mesh geometry={finGeo} scale={0.4}>
-          <meshStandardMaterial color={inkColor} roughness={0.5} transparent opacity={0.75} side={DoubleSide} />
+        <mesh geometry={finGeo} scale={0.42}>
+          <meshPhysicalMaterial color={finColor} roughness={0.4} transparent opacity={0.5} side={DoubleSide} clearcoat={0.3} />
+        </mesh>
+      </group>
+
+      <group ref={eyeLRef}>
+        <mesh>
+          <sphereGeometry args={[1.3, 12, 12]} />
+          <meshStandardMaterial color={inkColor} roughness={0.15} metalness={0.1} />
+        </mesh>
+      </group>
+      <group ref={eyeRRef}>
+        <mesh>
+          <sphereGeometry args={[1.3, 12, 12]} />
+          <meshStandardMaterial color={inkColor} roughness={0.15} metalness={0.1} />
         </mesh>
       </group>
     </group>
