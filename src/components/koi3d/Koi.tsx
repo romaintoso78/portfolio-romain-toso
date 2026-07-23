@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { BufferGeometry, DoubleSide, Group, Mesh, Vector3 } from "three";
+import {
+  BufferGeometry,
+  DoubleSide,
+  Group,
+  Mesh,
+  MeshPhysicalMaterial,
+  MeshStandardMaterial,
+  Vector3,
+} from "three";
 import { buildKoiBody } from "./koiGeometry";
 import { tailFinGeometry, pectoralFinGeometry, dorsalFinGeometry, barbelGeometry } from "./finGeometry";
 import { readKoiColors } from "./colors";
@@ -13,12 +21,12 @@ const SEG_COUNT = 14;
 // (points spread far apart) and bunch up into a blob when it slows down or
 // stops (points all land on top of each other). This keeps its length
 // constant no matter the speed.
-const STEP = 3;
+const STEP = 4.6;
 const HISTORY_MAX = SEG_COUNT + 6;
 // Blunt rounded head, thick midsection, a pinched peduncle just before the
 // tail fin — a smooth torpedo taper reads more like a slug than a fish.
 const RADII = [
-  1.4, 4.6, 6.8, 7.9, 8.2, 8, 7.4, 6.4, 5.2, 3.8, 2.4, 1.4, 0.9, 0.4,
+  2.2, 7.2, 10.6, 12.4, 12.8, 12.4, 11.4, 9.8, 8, 5.8, 3.6, 2.1, 1.3, 0.6,
 ];
 
 interface KoiProps {
@@ -42,20 +50,46 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
   const tailGeo = useMemo(() => tailFinGeometry(), []);
   const pectoralGeo = useMemo(() => pectoralFinGeometry(), []);
   const dorsalGeo = useMemo(() => dorsalFinGeometry(), []);
-  const barbelGeo = useMemo(() => barbelGeometry(6), []);
+  const barbelGeo = useMemo(() => barbelGeometry(9), []);
   const skinTexture = useMemo(() => buildKoiSkinTexture(readKoiColors()), []);
 
-  // The skin texture is painted once onto a canvas — repaint it in place
-  // (same texture instance, same patch layout) whenever the theme toggles,
-  // otherwise the koi's colors would freeze at whatever theme was active
-  // when it first mounted.
+  // Shared material *instances* (not JSX color props) for every fin/eye/
+  // barbel — passing a Color as a `color` prop only seeds the material's
+  // own internal color once; mutating that source Color afterwards doesn't
+  // reach the already-mounted material. Updating `.color` directly on
+  // these instances does, since it's the exact object every mesh renders
+  // with.
+  const finMaterial = useMemo(
+    () => new MeshPhysicalMaterial({ roughness: 0.4, transparent: true, opacity: 0.55, side: DoubleSide, clearcoat: 0.3 }),
+    [],
+  );
+  const barbelMaterial = useMemo(() => new MeshStandardMaterial({ roughness: 0.5 }), []);
+  const eyeMaterial = useMemo(() => new MeshStandardMaterial({ roughness: 0.15, metalness: 0.1 }), []);
+
   useEffect(() => {
-    const observer = new MutationObserver(() => {
-      buildKoiSkinTexture(readKoiColors(), 1, skinTexture);
-    });
+    const c = readKoiColors();
+    finMaterial.color.copy(c.paper);
+    barbelMaterial.color.copy(c.paper);
+    eyeMaterial.color.copy(c.ink);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // The skin texture is painted once onto a canvas — repaint it in place
+  // (same texture instance, same patch layout) whenever the theme toggles.
+  // Same story for the shared fin/barbel/eye materials: their `.color` is
+  // updated directly rather than relying on a prop that only applies once.
+  useEffect(() => {
+    const update = () => {
+      const c = readKoiColors();
+      buildKoiSkinTexture(c, 1, skinTexture);
+      finMaterial.color.copy(c.paper);
+      barbelMaterial.color.copy(c.paper);
+      eyeMaterial.color.copy(c.ink);
+    };
+    const observer = new MutationObserver(update);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => observer.disconnect();
-  }, [skinTexture]);
+  }, [skinTexture, finMaterial, barbelMaterial, eyeMaterial]);
 
   const state = useMemo(() => {
     const start = new Vector3(0, 0, 0);
@@ -209,15 +243,15 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     const perpY = dx / dlen;
 
     if (eyeLRef.current && eyeRRef.current) {
-      const eyeOffset = 2.7;
-      const eyeForward = 1.8;
+      const eyeOffset = 4.1;
+      const eyeForward = 2.7;
       eyeLRef.current.position.set(head.x + fwdX * eyeForward + perpX * eyeOffset, head.y + fwdY * eyeForward + perpY * eyeOffset, head.z);
       eyeRRef.current.position.set(head.x + fwdX * eyeForward - perpX * eyeOffset, head.y + fwdY * eyeForward - perpY * eyeOffset, head.z);
     }
 
     if (barbelLRef.current && barbelRRef.current) {
       const sway = reduceMotion ? 0 : Math.sin(state.time * 1.3) * 0.12;
-      const barbelOffset = 1.8;
+      const barbelOffset = 2.7;
       barbelLRef.current.position.set(head.x + perpX * barbelOffset, head.y + perpY * barbelOffset, head.z - 1);
       barbelRRef.current.position.set(head.x - perpX * barbelOffset, head.y - perpY * barbelOffset, head.z - 1);
       barbelLRef.current.rotation.set(0, 0, heading + Math.PI + 0.35 + sway);
@@ -249,19 +283,6 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
     }
   });
 
-  const inkColor = useMemo(() => readKoiColors().ink, []);
-  const finColor = useMemo(() => readKoiColors().paper, []);
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const c = readKoiColors();
-      inkColor.copy(c.ink);
-      finColor.copy(c.paper);
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => observer.disconnect();
-  }, [inkColor, finColor]);
-
   return (
     <group>
       <mesh ref={bodyRef}>
@@ -277,48 +298,34 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       </mesh>
 
       <group ref={tailRef}>
-        <mesh geometry={tailGeo} scale={0.95}>
-          <meshPhysicalMaterial color={finColor} roughness={0.4} transparent opacity={0.6} side={DoubleSide} clearcoat={0.3} />
-        </mesh>
+        <mesh geometry={tailGeo} material={finMaterial} scale={1.5} />
       </group>
       <group ref={finLRef}>
-        <mesh geometry={pectoralGeo} scale={0.85}>
-          <meshPhysicalMaterial color={finColor} roughness={0.4} transparent opacity={0.55} side={DoubleSide} clearcoat={0.3} />
-        </mesh>
+        <mesh geometry={pectoralGeo} material={finMaterial} scale={1.3} />
       </group>
       <group ref={finRRef}>
-        <mesh geometry={pectoralGeo} scale={0.85}>
-          <meshPhysicalMaterial color={finColor} roughness={0.4} transparent opacity={0.55} side={DoubleSide} clearcoat={0.3} />
-        </mesh>
+        <mesh geometry={pectoralGeo} material={finMaterial} scale={1.3} />
       </group>
       <group ref={dorsalRef}>
-        <mesh geometry={dorsalGeo} scale={0.85}>
-          <meshPhysicalMaterial color={finColor} roughness={0.4} transparent opacity={0.5} side={DoubleSide} clearcoat={0.3} />
-        </mesh>
+        <mesh geometry={dorsalGeo} material={finMaterial} scale={1.3} />
       </group>
 
       <group ref={eyeLRef}>
-        <mesh>
-          <sphereGeometry args={[1.3, 12, 12]} />
-          <meshStandardMaterial color={inkColor} roughness={0.15} metalness={0.1} />
+        <mesh material={eyeMaterial}>
+          <sphereGeometry args={[1.9, 12, 12]} />
         </mesh>
       </group>
       <group ref={eyeRRef}>
-        <mesh>
-          <sphereGeometry args={[1.3, 12, 12]} />
-          <meshStandardMaterial color={inkColor} roughness={0.15} metalness={0.1} />
+        <mesh material={eyeMaterial}>
+          <sphereGeometry args={[1.9, 12, 12]} />
         </mesh>
       </group>
 
       <group ref={barbelLRef}>
-        <mesh geometry={barbelGeo}>
-          <meshStandardMaterial color={finColor} roughness={0.5} />
-        </mesh>
+        <mesh geometry={barbelGeo} material={barbelMaterial} />
       </group>
       <group ref={barbelRRef}>
-        <mesh geometry={barbelGeo}>
-          <meshStandardMaterial color={finColor} roughness={0.5} />
-        </mesh>
+        <mesh geometry={barbelGeo} material={barbelMaterial} />
       </group>
     </group>
   );
