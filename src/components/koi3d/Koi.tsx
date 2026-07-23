@@ -225,8 +225,15 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
       spine.push(state.history[idx]);
     }
 
-    geometryRef.current = buildKoiBody(spine, RADII, geometryRef.current);
-    if (bodyRef.current) bodyRef.current.geometry = geometryRef.current;
+    // Defensive: a bad geometry rebuild should never freeze the rest of the
+    // fish (fins/eyes/tail below) — worst case, the body keeps its last
+    // good shape for a frame instead of the whole koi seizing up.
+    try {
+      geometryRef.current = buildKoiBody(spine, RADII, geometryRef.current);
+      if (bodyRef.current) bodyRef.current.geometry = geometryRef.current;
+    } catch (err) {
+      if (import.meta.env.DEV) console.error("buildKoiBody failed", err);
+    }
 
     const head = spine[0];
     const neck = spine[1] ?? head;

@@ -50,7 +50,7 @@ export function buildKoiBody(
     const p = points[i];
     const t = i / (ringCount - 1);
 
-    curve.getTangentAt(t, tangent);
+    curve.getTangent(t, tangent);
     if (tangent.lengthSq() < 1e-6) tangent.set(1, 0, 0);
     tangent.normalize();
 
