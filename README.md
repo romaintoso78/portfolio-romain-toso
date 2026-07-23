@@ -16,9 +16,13 @@ Thème encre sumi-e / or / laque : fond noir d'encre, accent or (kintsugi), roug
 réservé au sceau (hanko) et aux badges. Coins carrés (esthétique rectiligne japonaise
 plutôt que `rounded-lg`).
 
-- `src/components/KoiFish.tsx` : koi en Canvas qui suit le curseur avec une physique de
-  ressort amorti ; nage seul en boucles paresseuses si la souris est inactive ou absente
-  (tactile). Respecte `prefers-reduced-motion` (pose statique, pas d'animation).
+- `src/components/KoiFish.tsx` (+ `src/components/koi3d/`) : koi rendu en vraie 3D
+  (Three.js / React Three Fiber, géométrie procédurale — pas de modèle externe), avec
+  éclairage et fini façon laque (`clearcoat`). Suit le curseur avec une physique de
+  ressort amorti, nage seul en boucles paresseuses si la souris est inactive ou absente
+  (tactile). Respecte `prefers-reduced-motion` (pose statique, pas d'animation). Chargé
+  en lazy (`React.lazy` + `Suspense`) pour ne pas alourdir le chargement initial du
+  contenu — la scène 3D arrive dans son propre chunk juste après.
 - `src/components/ui/Hanko.tsx` : sceau décoratif à côté du nom en Hero.
 - `src/components/ui/WaveDivider.tsx` : séparateur de sections en motif seigaiha (vagues).
 - Palette et polices pilotées entièrement par les variables CSS de `src/index.css` —

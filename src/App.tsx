@@ -1,6 +1,6 @@
+import { lazy, Suspense } from "react";
 import { Nav } from "./components/Nav";
 import { StatusRail } from "./components/StatusRail";
-import { KoiFish } from "./components/KoiFish";
 import { Hero } from "./components/Hero";
 import { About } from "./components/About";
 import { Experience } from "./components/Experience";
@@ -11,6 +11,8 @@ import { Contact } from "./components/Contact";
 import { Footer } from "./components/Footer";
 import { WaveDivider } from "./components/ui/WaveDivider";
 import { useActiveSection } from "./hooks/useActiveSection";
+
+const KoiFish = lazy(() => import("./components/KoiFish").then((m) => ({ default: m.KoiFish })));
 
 const sections = [
   { id: "hero", label: "Accueil" },
@@ -27,7 +29,9 @@ function App() {
 
   return (
     <>
-      <KoiFish />
+      <Suspense fallback={null}>
+        <KoiFish />
+      </Suspense>
       <Nav sections={sections} activeId={activeId} />
       <StatusRail sections={sections} activeId={activeId} />
       <main className="relative z-10">
