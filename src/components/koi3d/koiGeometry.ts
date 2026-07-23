@@ -8,11 +8,11 @@ import { BufferGeometry, BufferAttribute, Vector3 } from "three";
 // swimming wave look is the spine's own sampling density. So the budget is
 // spent asymmetrically: fewer ring segments (cheap, low visual cost) and
 // many more spine samples (where resolution is actually seen).
-const RING_SEGMENTS = 10;
+const RING_SEGMENTS = 12;
 // The physics only tracks a handful of control points (one per STEP units
 // travelled); resampling a smooth curve through them at a much higher
 // resolution avoids a faceted, polyline-y body silhouette.
-const SPINE_SAMPLES = 56;
+const SPINE_SAMPLES = 72;
 const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
 // How many full S-bends fit along the body — real carp/koi are

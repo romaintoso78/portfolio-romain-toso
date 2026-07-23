@@ -12,7 +12,9 @@ export function tailFinGeometry() {
   shape.bezierCurveTo(25, 15, 20, 8, 17, 0);
   shape.bezierCurveTo(20, -8, 25, -15, 34, -21);
   shape.bezierCurveTo(20, -13, 11, -9, 0, 0);
-  return new ShapeGeometry(shape, 14);
+  // Built once (useMemo), never rebuilt per frame — curve tessellation is
+  // free to be generous here; this is a one-time cost, not an animation cost.
+  return new ShapeGeometry(shape, 32);
 }
 
 /**
@@ -25,7 +27,7 @@ export function pectoralFinGeometry() {
   shape.bezierCurveTo(4, -2, 10, -5, 18, -14);
   shape.bezierCurveTo(14, -15, 9, -13.5, 4, -10.5);
   shape.bezierCurveTo(4.5, -6.5, 3, -3, 0, 0);
-  return new ShapeGeometry(shape, 10);
+  return new ShapeGeometry(shape, 24);
 }
 
 /** Tall, long, sail-like dorsal fin with a flowing trailing edge. */
@@ -34,7 +36,7 @@ export function dorsalFinGeometry() {
   shape.moveTo(0, 0);
   shape.bezierCurveTo(5, 6, 14, 9, 23, 8);
   shape.bezierCurveTo(16, 6, 8, 3.2, 0, 0);
-  return new ShapeGeometry(shape, 8);
+  return new ShapeGeometry(shape, 20);
 }
 
 /**
@@ -42,7 +44,7 @@ export function dorsalFinGeometry() {
  * the attachment point) tapering to a fine point at +X (length away).
  */
 export function barbelGeometry(length: number) {
-  const geo = new CylinderGeometry(0.35, 0.05, length, 5, 1);
+  const geo = new CylinderGeometry(0.35, 0.05, length, 10, 1);
   geo.rotateZ(Math.PI / 2);
   geo.translate(length / 2, 0, 0);
   return geo;

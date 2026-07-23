@@ -442,12 +442,12 @@ export function Koi({ reduceMotion, spawnerRef }: KoiProps) {
 
       <group ref={eyeLRef}>
         <mesh material={eyeMaterial}>
-          <sphereGeometry args={[1.9, 12, 12]} />
+          <sphereGeometry args={[1.9, 20, 20]} />
         </mesh>
       </group>
       <group ref={eyeRRef}>
         <mesh material={eyeMaterial}>
-          <sphereGeometry args={[1.9, 12, 12]} />
+          <sphereGeometry args={[1.9, 20, 20]} />
         </mesh>
       </group>
 
