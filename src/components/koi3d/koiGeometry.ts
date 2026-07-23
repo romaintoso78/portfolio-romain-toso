@@ -1,19 +1,21 @@
-import { BufferGeometry, BufferAttribute, Color, Vector3 } from "three";
-import { bodyColorAt, type KoiColors } from "./colors";
+import { BufferGeometry, BufferAttribute, Vector3 } from "three";
 
-const RING_SEGMENTS = 10;
+const RING_SEGMENTS = 20;
 const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
 
 /**
- * Builds (or refreshes) a tapered tube around the given spine, ring by ring,
+ * Builds (or refreshes) a tapered body around the given spine, ring by ring,
  * using a stable per-ring frame (tangent/right/up) so the body doesn't twist.
- * Reuses `geometry` across frames when the vertex count already matches.
+ * Cross-section is a slightly flattened, ventrally-offset ellipse (real fish
+ * aren't cylinders: flatter belly, a touch of dorsal ridge) rather than a
+ * perfect circle. Reuses `geometry` across frames when the vertex count
+ * already matches. UVs: u = position along the body, v = angle around it —
+ * used to map the procedural skin texture.
  */
 export function buildKoiBody(
   spine: Vector3[],
   radii: number[],
-  colors: KoiColors,
   geometry?: BufferGeometry,
 ): BufferGeometry {
   const ringCount = spine.length;
@@ -23,9 +25,8 @@ export function buildKoiBody(
   const reuse = geo.getAttribute("position")?.count === vertsNeeded;
 
   const positions = reuse ? (geo.getAttribute("position").array as Float32Array) : new Float32Array(vertsNeeded * 3);
-  const colorsArr = reuse ? (geo.getAttribute("color").array as Float32Array) : new Float32Array(vertsNeeded * 3);
+  const uvs = reuse ? (geo.getAttribute("uv").array as Float32Array) : new Float32Array(vertsNeeded * 2);
 
-  const tmpColor = new Color();
   const tangent = new Vector3();
   const right = new Vector3();
   const ringUp = new Vector3();
@@ -43,6 +44,9 @@ export function buildKoiBody(
     ringUp.crossVectors(right, tangent).normalize();
 
     const radius = radii[i] ?? 0.05;
+    const width = radius;
+    const height = radius * 0.82;
+    const bellyOffset = radius * 0.12;
     const t = ringCount > 1 ? i / (ringCount - 1) : 0;
 
     for (let s = 0; s < RING_SEGMENTS; s++) {
@@ -51,14 +55,16 @@ export function buildKoiBody(
       const sin = Math.sin(theta);
       const idx = (i * RING_SEGMENTS + s) * 3;
 
-      positions[idx] = p.x + (right.x * cos + ringUp.x * sin) * radius;
-      positions[idx + 1] = p.y + (right.y * cos + ringUp.y * sin) * radius;
-      positions[idx + 2] = p.z + (right.z * cos + ringUp.z * sin) * radius;
+      const wx = cos * width;
+      const wy = sin * height - bellyOffset;
 
-      bodyColorAt(colors, t, theta, tmpColor);
-      colorsArr[idx] = tmpColor.r;
-      colorsArr[idx + 1] = tmpColor.g;
-      colorsArr[idx + 2] = tmpColor.b;
+      positions[idx] = p.x + right.x * wx + ringUp.x * wy;
+      positions[idx + 1] = p.y + right.y * wx + ringUp.y * wy;
+      positions[idx + 2] = p.z + right.z * wx + ringUp.z * wy;
+
+      const uvIdx = (i * RING_SEGMENTS + s) * 2;
+      uvs[uvIdx] = t;
+      uvs[uvIdx + 1] = s / RING_SEGMENTS;
     }
   }
 
@@ -75,10 +81,9 @@ export function buildKoiBody(
     }
     geo.setIndex(indices);
     geo.setAttribute("position", new BufferAttribute(positions, 3));
-    geo.setAttribute("color", new BufferAttribute(colorsArr, 3));
+    geo.setAttribute("uv", new BufferAttribute(uvs, 2));
   } else {
     geo.getAttribute("position").needsUpdate = true;
-    geo.getAttribute("color").needsUpdate = true;
   }
 
   geo.computeVertexNormals();
