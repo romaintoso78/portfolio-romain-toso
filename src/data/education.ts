@@ -3,25 +3,20 @@ import type { EducationEntry } from "../types";
 export const education: EducationEntry[] = [
   {
     school: "ESGI Paris",
-    program: "Cycle Bac+5 Expert en Ingénierie Informatique",
+    program: "Bachelor Informatique générale, spécialisation Cybersécurité",
     period: "2024 – 2027 (en cours)",
-    detail: "Spécialisation Cybersécurité, orientation DevOps en 3e année.",
+    detail:
+      "Actuellement en 2e année. Spécialisations Infrastructure (Systèmes et Réseaux), Développement Web et Cybersécurité, orientation DevOps en 3e année. Poursuite en Mastère à l'issue du Bachelor.",
     modules: [
+      "Systèmes et Réseaux",
+      "Développement Web (HTML/PHP/CSS/JS)",
+      "Cybersécurité",
       "Kubernetes",
       "Terraform",
       "GitOps",
-      "Platform Engineering",
       "Sécurité offensive",
-      "Réseaux",
     ],
-    status: "En cours, diplôme visé : septembre 2027.",
-  },
-  {
-    school: "ESGI Paris",
-    program: "Bachelor Informatique générale",
-    period: "Diplômé en 2024",
-    detail: "Spécialisations Infrastructure (Systèmes et Réseaux), Développement Web et Cybersécurité.",
-    modules: ["Systèmes et Réseaux", "Développement Web (HTML/PHP/CSS/JS)", "Cybersécurité"],
+    status: "En cours (2e année), Bachelor visé en 2027, puis Mastère.",
   },
   {
     school: "Lycée Alain, Le Vésinet",
