@@ -40,12 +40,12 @@ export function KoiFish() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+    <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
       <Canvas
         orthographic
         camera={{ position: [0, 0, 100], near: 0.1, far: 1000, zoom: 1 }}
-        gl={{ alpha: true, antialias: true }}
-        dpr={[1, 2]}
+        gl={{ alpha: true, antialias: false, powerPreference: "high-performance" }}
+        dpr={1}
       >
         <ambientLight ref={ambientRef} intensity={1.4} color={AMBIENT_FILL} />
         <directionalLight ref={directionalRef} position={[80, 120, 140]} intensity={3.2} color={colors.gold} />

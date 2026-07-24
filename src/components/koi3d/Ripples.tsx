@@ -1,6 +1,6 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Group, Mesh, MeshBasicMaterial, RingGeometry } from "three";
+import { Color, Group, Mesh, MeshBasicMaterial, RingGeometry } from "three";
 import { readKoiColors } from "./colors";
 
 const MAX_RIPPLES = 6;
@@ -36,11 +36,22 @@ export function Ripples({ spawnerRef }: { spawnerRef: React.MutableRefObject<Rip
   };
 
   const geometry = useMemo(() => new RingGeometry(0.85, 1, 32), []);
+  // getComputedStyle (inside readKoiColors) forces a style recalculation —
+  // fine once, but calling it every frame in the render loop was a real
+  // stutter source. Cache it and only re-read on an actual theme change.
+  const goldRef = useRef<Color>(readKoiColors().gold);
+
+  useEffect(() => {
+    const update = () => goldRef.current.copy(readKoiColors().gold);
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 1 / 30);
     if (!groupRef.current) return;
-    const gold = readKoiColors().gold;
+    const gold = goldRef.current;
 
     groupRef.current.children.forEach((child, i) => {
       const ripple = ripples[i];

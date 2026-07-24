@@ -1,12 +1,31 @@
 import { BufferGeometry, BufferAttribute, Vector3 } from "three";
 
-const RING_SEGMENTS = 20;
+// The camera is orthographic, looking straight down the depth axis, and the
+// koi swims almost entirely in that screen plane (only a faint +/-1.4 unit
+// bob in depth) — so the ring subdivision (which mostly varies across the
+// *depth* axis) barely affects the visible silhouette, only shading
+// roundness. What actually controls how smooth the visible outline and its
+// swimming wave look is the spine's own sampling density. So the budget is
+// spent asymmetrically: fewer ring segments (cheap, low visual cost) and
+// many more spine samples (where resolution is actually seen).
+// Every vertex here is rebuilt from scratch and has its normal recomputed
+// every single frame — this whole mesh is squarely on the animation's hot
+// path, not a one-time cost. Pulled back down from an earlier, more
+// generous pass once continuous frame-time cost turned out to matter more
+// than screenshot-grade smoothness.
+const RING_SEGMENTS = 8;
 // The physics only tracks a handful of control points (one per STEP units
 // travelled); resampling a smooth curve through them at a much higher
 // resolution avoids a faceted, polyline-y body silhouette.
-const SPINE_SAMPLES = 48;
+const SPINE_SAMPLES = 44;
 const UP = new Vector3(0, 0, 1);
 const FALLBACK_UP = new Vector3(0, 1, 0);
+// How many full S-bends fit along the body — real carp/koi are
+// sub-carangiform swimmers, roughly one-and-a-bit wavelengths head to tail.
+// Exported so the tail fin (positioned in Koi.tsx, not part of this mesh)
+// can compute the exact same traveling wave instead of re-deriving its own
+// approximation of it.
+export const WAVE_NUMBER = 1.25;
 
 function clampIndex(points: Vector3[], i: number): Vector3 {
   return points[Math.max(0, Math.min(points.length - 1, i))];
@@ -49,15 +68,21 @@ function radiusAt(controlRadii: number[], t: number): number {
  * much finer resolution than the sparse physics control points so the
  * silhouette reads as a continuous fish rather than a faceted polyline).
  * Cross-section is a slightly flattened, ventrally-offset ellipse — real
- * fish aren't cylinders: flatter belly, a touch of dorsal ridge. Reuses
- * `geometry` across frames when the vertex count already matches. UVs:
- * u = position along the body, v = angle around it — used to map the skin
- * texture.
+ * fish aren't cylinders: flatter belly, a touch of dorsal ridge. A lateral
+ * S-curve undulation (amplitude growing toward the tail, phase travelling
+ * backward over time via `wavePhase`) is layered on top of the base spline
+ * — the actual swimming motion of a fish's body, not just a rigid shape
+ * dragged along a path. Reuses `geometry` across frames when the vertex
+ * count already matches. UVs: u = position along the body, v = angle
+ * around it — used to map the skin texture.
  */
 export function buildKoiBody(
   controlPoints: Vector3[],
   controlRadii: number[],
+  wavePhase: number,
+  waveAmp: number,
   geometry?: BufferGeometry,
+  bankAngle = 0,
 ): BufferGeometry {
   const ringCount = SPINE_SAMPLES;
   const segCount = controlPoints.length - 1;
@@ -93,6 +118,36 @@ export function buildKoiBody(
     const ref = Math.abs(tangent.dot(UP)) > 0.95 ? FALLBACK_UP : UP;
     right.crossVectors(tangent, ref).normalize();
     ringUp.crossVectors(right, tangent).normalize();
+
+    // Bank/roll into turns, like a real swimming fish tilting its body
+    // toward the inside of a curve rather than staying perfectly upright.
+    // Rotating {right, ringUp} around the tangent axis (they're already an
+    // orthonormal frame with it) tilts the whole cross-section; the roll is
+    // let grow slightly toward the tail so the twist reads as a flex of the
+    // body rather than a rigid whole-fish rotation.
+    if (bankAngle !== 0) {
+      const bankHere = bankAngle * (0.5 + 0.5 * t);
+      const cosB = Math.cos(bankHere);
+      const sinB = Math.sin(bankHere);
+      const rx = right.x, ry = right.y, rz = right.z;
+      right.x = rx * cosB - ringUp.x * sinB;
+      right.y = ry * cosB - ringUp.y * sinB;
+      right.z = rz * cosB - ringUp.z * sinB;
+      ringUp.x = rx * sinB + ringUp.x * cosB;
+      ringUp.y = ry * sinB + ringUp.y * cosB;
+      ringUp.z = rz * sinB + ringUp.z * cosB;
+    }
+
+    // Lateral undulation: near-zero at the head, growing toward the tail,
+    // travelling backward as wavePhase advances — the S-curve swimming
+    // motion. Applied to the ring center before building its cross-section.
+    if (waveAmp > 0) {
+      const envelope = t * t;
+      const lateral = envelope * waveAmp * Math.sin(WAVE_NUMBER * t * Math.PI * 2 - wavePhase);
+      p.x += right.x * lateral;
+      p.y += right.y * lateral;
+      p.z += right.z * lateral;
+    }
 
     const radius = radiusAt(controlRadii, t);
     const width = radius;
@@ -137,6 +192,10 @@ export function buildKoiBody(
   }
 
   geo.computeVertexNormals();
-  geo.computeBoundingSphere();
+  // No computeBoundingSphere here: it's an O(vertices) pass whose only
+  // consumer is frustum culling, which the mesh has disabled (frustumCulled
+  // = false in Koi.tsx — a fixed background element that's always at least
+  // partially on screen) — recomputing it every single frame was pure
+  // wasted work on the animation's hot path.
   return geo;
 }

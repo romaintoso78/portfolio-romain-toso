@@ -1,33 +1,42 @@
 import { CylinderGeometry, Shape, ShapeGeometry } from "three";
 
-/** Forked caudal (tail) fin, authored flat on the XY plane pointing along +X. */
+/**
+ * Deeply forked caudal (tail) fin with long, thin, flowing lobes — modeled
+ * on ornamental "butterfly"/long-fin koi rather than the short, stiff tail
+ * of a standard pond koi. Authored flat on the XY plane pointing along +X.
+ */
 export function tailFinGeometry() {
   const shape = new Shape();
   shape.moveTo(0, 0);
-  shape.bezierCurveTo(6, 5, 11, 7, 20, 13);
-  shape.bezierCurveTo(15, 8, 13, 4, 12, 0);
-  shape.bezierCurveTo(13, -4, 15, -8, 20, -13);
-  shape.bezierCurveTo(11, -7, 6, -5, 0, 0);
-  return new ShapeGeometry(shape, 10);
+  shape.bezierCurveTo(11, 9, 20, 13, 34, 21);
+  shape.bezierCurveTo(25, 15, 20, 8, 17, 0);
+  shape.bezierCurveTo(20, -8, 25, -15, 34, -21);
+  shape.bezierCurveTo(20, -13, 11, -9, 0, 0);
+  // Built once (useMemo), never rebuilt per frame — curve tessellation is
+  // free to be generous here; this is a one-time cost, not an animation cost.
+  return new ShapeGeometry(shape, 32);
 }
 
-/** Rounded, fan-like pectoral fin (used for the pair near the head). */
+/**
+ * Long, trailing, scythe-shaped pectoral fin — butterfly koi carry these
+ * far past the head rather than the short rounded fan of a standard koi.
+ */
 export function pectoralFinGeometry() {
   const shape = new Shape();
   shape.moveTo(0, 0);
-  shape.bezierCurveTo(3, -1, 7, -3, 10, -8);
-  shape.bezierCurveTo(8, -9, 5, -8.5, 2, -6.5);
-  shape.bezierCurveTo(3, -4, 2, -1.5, 0, 0);
-  return new ShapeGeometry(shape, 8);
+  shape.bezierCurveTo(4, -2, 10, -5, 18, -14);
+  shape.bezierCurveTo(14, -15, 9, -13.5, 4, -10.5);
+  shape.bezierCurveTo(4.5, -6.5, 3, -3, 0, 0);
+  return new ShapeGeometry(shape, 24);
 }
 
-/** Long, low, sail-like dorsal fin. */
+/** Tall, long, sail-like dorsal fin with a flowing trailing edge. */
 export function dorsalFinGeometry() {
   const shape = new Shape();
   shape.moveTo(0, 0);
-  shape.bezierCurveTo(3, 3.5, 8, 4.5, 13, 4);
-  shape.bezierCurveTo(9, 3, 5, 1.8, 0, 0);
-  return new ShapeGeometry(shape, 6);
+  shape.bezierCurveTo(5, 6, 14, 9, 23, 8);
+  shape.bezierCurveTo(16, 6, 8, 3.2, 0, 0);
+  return new ShapeGeometry(shape, 20);
 }
 
 /**
@@ -35,7 +44,7 @@ export function dorsalFinGeometry() {
  * the attachment point) tapering to a fine point at +X (length away).
  */
 export function barbelGeometry(length: number) {
-  const geo = new CylinderGeometry(0.35, 0.05, length, 5, 1);
+  const geo = new CylinderGeometry(0.35, 0.05, length, 10, 1);
   geo.rotateZ(Math.PI / 2);
   geo.translate(length / 2, 0, 0);
   return geo;
